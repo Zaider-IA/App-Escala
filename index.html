@@ -1,0 +1,286 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Escala da Equipe</title>
+<style>
+:root{--bg:#f3f5f7;--card:#fff;--ink:#1c2733;--mut:#68788a;--line:#dde3ea;--pri:#1f5f8b;--ok:#1f8a5b;--bad:#c4392f;--warn:#b7791f;--hol:#fff4d6}
+@media(prefers-color-scheme:dark){:root{--bg:#10161d;--card:#18212b;--ink:#e6edf3;--mut:#93a4b6;--line:#2a3745;--pri:#5aa6dc;--ok:#47c48b;--bad:#ee7a70;--warn:#e0b050;--hol:#3a3216}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.45 system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+header{background:var(--card);border-bottom:1px solid var(--line);padding:10px 14px;position:sticky;top:0;z-index:5}
+header .top{display:flex;justify-content:space-between;align-items:center;gap:8px}
+h1{font-size:17px;margin:0}
+nav{display:flex;gap:4px;overflow-x:auto;margin-top:8px}
+nav button{background:none;border:0;color:var(--mut);padding:8px 12px;border-radius:8px;cursor:pointer;white-space:nowrap;font:inherit}
+nav button.on{background:var(--pri);color:#fff}
+main{padding:14px;max-width:1100px;margin:auto}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px;margin-bottom:14px}
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:6px 0}
+.row.end{justify-content:flex-end}.grow{flex:1}
+button{background:var(--pri);color:#fff;border:0;border-radius:8px;padding:8px 14px;cursor:pointer;font:inherit}
+button.ghost{background:none;color:var(--pri);border:1px solid var(--line)}
+button.red{background:var(--bad)}button.sm{padding:4px 10px;font-size:13px}
+input,select,textarea{font:inherit;color:inherit;background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:8px;width:100%}
+input[type=checkbox]{width:auto}
+label{display:block;margin:8px 0;color:var(--mut);font-size:13px}
+label input,label select,label textarea{margin-top:3px;color:var(--ink)}
+.scroll{overflow-x:auto}
+table{border-collapse:collapse;width:100%;min-width:640px}
+th,td{border-bottom:1px solid var(--line);padding:8px;text-align:left;vertical-align:top;font-size:14px}
+th{color:var(--mut);font-weight:600}
+td.hol,th.hol{background:var(--hol)}
+.tag{display:inline-block;border-radius:6px;padding:1px 7px;font-size:12px;font-weight:600}
+.tag.bad{background:var(--bad);color:#fff}.tag.ok{background:var(--ok);color:#fff}.tag.warn{background:var(--warn);color:#fff}
+small,.mut{color:var(--mut)}
+.w{width:38px}
+dialog{border:1px solid var(--line);border-radius:12px;background:var(--card);color:var(--ink);width:min(520px,94vw);padding:16px;max-height:90vh;overflow:auto}
+dialog::backdrop{background:#0008}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px}
+.stat{border:1px solid var(--line);border-radius:10px;padding:10px}.stat b{font-size:22px;display:block}
+@media print{header,button,nav{display:none}body{background:#fff;color:#000}}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script src="config.js"></script>
+<script>
+const db = supabase.createClient(CFG.url, CFG.key);
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const DIAS = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
+const MOTIVOS = ['Falta sem justificativa','Atestado médico','Problema pessoal','Atraso','Folga compensada','Outro'];
+const p2 = n => String(n).padStart(2,'0');
+const iso = d => d.getFullYear()+'-'+p2(d.getMonth()+1)+'-'+p2(d.getDate());
+const parse = s => { const [a,b,c] = s.split('-'); return new Date(+a,b-1,+c); };
+const fmt = s => parse(s).toLocaleDateString('pt-BR');
+const monday = d => { const x = new Date(d); x.setDate(x.getDate() - (x.getDay()+6)%7); x.setHours(0,0,0,0); return x; };
+const ck = async q => { const r = await q; if (r.error) throw r.error; return r; };
+const hhmm = t => (t||'').slice(0,5);
+
+let S = { tab:'escala', emps:[], esc:[], faltas:[], extras:[], week:monday(new Date()), month:iso(new Date()).slice(0,7), year:new Date().getFullYear(), verInativos:false };
+
+// ---------- Feriados nacionais (calculados para qualquer ano) ----------
+function pascoa(y){const a=y%19,b=Math.floor(y/100),c=y%100,d=Math.floor(b/4),e=b%4,f=Math.floor((b+8)/25),g=Math.floor((b-f+1)/3),h=(19*a+b-d-g+15)%30,i=Math.floor(c/4),k=c%4,l=(32+2*e+2*i-h-k)%7,m=Math.floor((a+11*h+22*l)/451),mes=Math.floor((h+l-7*m+114)/31),dia=((h+l-7*m+114)%31)+1;return new Date(y,mes-1,dia);}
+function feriadosAno(y){
+  const m = {}, add = (d,n) => m[iso(d)] = n, off = (d,n) => { const x=new Date(d); x.setDate(x.getDate()+n); return x; };
+  [[1,1,'Confraternização Universal'],[4,21,'Tiradentes'],[5,1,'Dia do Trabalho'],[9,7,'Independência'],[10,12,'Nossa Sra. Aparecida'],[11,2,'Finados'],[11,15,'Proclamação da República'],[11,20,'Consciência Negra'],[12,25,'Natal']].forEach(([mm,dd,n]) => add(new Date(y,mm-1,dd),n));
+  const p = pascoa(y);
+  add(off(p,-48),'Carnaval (segunda)'); add(off(p,-47),'Carnaval (terça)'); add(off(p,-2),'Sexta-feira Santa'); add(p,'Páscoa'); add(off(p,60),'Corpus Christi');
+  return m;
+}
+function feriados(...anos){
+  const m = {}; anos.forEach(y => Object.assign(m, feriadosAno(y)));
+  S.extras.forEach(e => m[e.data] = e.nome + ' (extra)');
+  return m;
+}
+
+// ---------- Dados ----------
+async function load(){
+  try{
+    const [a,b,c,d] = await Promise.all([
+      ck(db.from('funcionarios').select('*').order('nome')),
+      ck(db.from('escalas').select('*')),
+      ck(db.from('faltas').select('*').order('data',{ascending:false})),
+      ck(db.from('feriados_extras').select('*').order('data'))
+    ]);
+    S.emps=a.data; S.esc=b.data; S.faltas=c.data; S.extras=d.data;
+  }catch(e){ alert('Erro ao carregar: '+e.message); }
+  render();
+}
+const nome = id => (S.emps.find(e => e.id===id)||{}).nome || '—';
+
+// ---------- Janela de formulário ----------
+function modal(title, body, onSave){
+  const d = document.createElement('dialog');
+  d.innerHTML = `<form method="dialog"><h3>${title}</h3>${body}<div class="row end"><button class="ghost" value="x">Cancelar</button><button type="button" id="sv">Salvar</button></div></form>`;
+  document.body.append(d); d.showModal();
+  d.addEventListener('close', () => d.remove());
+  d.querySelector('#sv').onclick = async () => { try{ await onSave(d); d.close(); await load(); }catch(e){ alert(e.message); } };
+}
+const opts = (list, sel) => list.map(([v,t]) => `<option value="${esc(v)}" ${v===sel?'selected':''}>${esc(t)}</option>`).join('');
+
+// ---------- Login ----------
+async function start(){
+  const { data } = await db.auth.getSession();
+  if (data.session) return load();
+  $('#app').innerHTML = `<main><div class="card" style="max-width:380px;margin:40px auto"><h1>Escala da Equipe</h1><p class="mut">Entre com o e-mail e a senha criados no Supabase.</p>
+  <label>E-mail<input id="em" type="email" autocomplete="username"></label><label>Senha<input id="pw" type="password" autocomplete="current-password"></label>
+  <button id="go" style="width:100%;margin-top:8px">Entrar</button></div></main>`;
+  $('#go').onclick = async () => {
+    const { error } = await db.auth.signInWithPassword({ email:$('#em').value.trim(), password:$('#pw').value });
+    if (error) return alert('Não foi possível entrar: ' + error.message);
+    load();
+  };
+}
+
+// ---------- Estrutura ----------
+const TABS = [['escala','Escala'],['func','Funcionários'],['faltas','Faltas'],['feriados','Feriados'],['resumo','Resumo']];
+function render(){
+  $('#app').innerHTML = `<header><div class="top"><h1>Escala da Equipe</h1><button class="ghost sm" id="out">Sair</button></div>
+  <nav>${TABS.map(([k,t]) => `<button class="${S.tab===k?'on':''}" data-t="${k}">${t}</button>`).join('')}</nav></header>
+  <main>${({escala:vEscala,func:vFunc,faltas:vFaltas,feriados:vFeriados,resumo:vResumo})[S.tab]()}</main>`;
+  $('#out').onclick = async () => { await db.auth.signOut(); start(); };
+  document.querySelectorAll('nav button').forEach(b => b.onclick = () => { S.tab = b.dataset.t; render(); });
+  bind[S.tab] && bind[S.tab]();
+}
+const bind = {};
+
+// ---------- Escala da semana ----------
+function vEscala(){
+  const dias = [...Array(7)].map((_,i) => { const d = new Date(S.week); d.setDate(d.getDate()+i); return d; });
+  const H = feriados(dias[0].getFullYear(), dias[6].getFullYear());
+  const ativos = S.emps.filter(e => e.ativo);
+  const cab = dias.map(d => { const k=iso(d), h=H[k]; return `<th class="${h?'hol':''}">${DIAS[d.getDay()]} ${p2(d.getDate())}/${p2(d.getMonth()+1)}${h?`<br><small>★ ${esc(h)}</small>`:''}</th>`; }).join('');
+  const linhas = ativos.map(e => `<tr><td><b class="lnk" data-e="${e.id}" style="cursor:pointer">${esc(e.nome)}</b><br><small>${esc(e.cargo)}</small></td>` + dias.map(d => {
+    const k = iso(d), f = S.faltas.find(x => x.funcionario_id===e.id && x.data===k), cobre = S.faltas.filter(x => x.cobertura_id===e.id && x.data===k), sc = S.esc.find(x => x.funcionario_id===e.id && x.dia_semana===d.getDay());
+    let c = '';
+    if (f) c += `<span class="tag bad">${f.atestado?'Atestado':'Falta'}</span>` + (f.cobertura_id?`<br><small>cobre: ${esc(nome(f.cobertura_id))}</small>`:'');
+    else c += !sc ? '<small>sem escala</small>' : sc.folga ? '<small>Folga</small>' : `${hhmm(sc.entrada)}–${hhmm(sc.saida)}`;
+    cobre.forEach(x => c += `<br><span class="tag ok">cobre ${esc(nome(x.funcionario_id))}</span>`);
+    return `<td class="${H[k]?'hol':''}">${c}</td>`;
+  }).join('') + '</tr>').join('');
+  const fim = dias[6];
+  return `<div class="card"><div class="row"><button class="ghost sm" id="pv">‹ Semana anterior</button><b class="grow" style="text-align:center">${dias[0].toLocaleDateString('pt-BR')} a ${fim.toLocaleDateString('pt-BR')}</b><button class="ghost sm" id="hj">Hoje</button><button class="ghost sm" id="nx">Próxima ›</button></div>
+  <div class="scroll"><table><tr><th>Funcionário</th>${cab}</tr>${linhas || '<tr><td colspan=8>Cadastre funcionários na aba Funcionários.</td></tr>'}</table></div>
+  <p class="mut"><small>Toque no nome para editar a escala semanal. Dias com ★ são feriados.</small></p></div>`;
+}
+bind.escala = () => {
+  const mv = n => { S.week = new Date(S.week.getFullYear(), S.week.getMonth(), S.week.getDate()+n); render(); };
+  $('#pv').onclick = () => mv(-7); $('#nx').onclick = () => mv(7); $('#hj').onclick = () => { S.week = monday(new Date()); render(); };
+  document.querySelectorAll('.lnk').forEach(l => l.onclick = () => empForm(S.emps.find(e => e.id===l.dataset.e)));
+};
+
+// ---------- Funcionários ----------
+function vFunc(){
+  const lista = S.emps.filter(e => S.verInativos || e.ativo);
+  return `<div class="card"><div class="row"><b class="grow">Funcionários (${S.emps.filter(e=>e.ativo).length} ativos)</b><label style="margin:0"><input type="checkbox" id="vi" ${S.verInativos?'checked':''}> mostrar inativos</label><button id="nv">+ Novo funcionário</button></div>
+  ${lista.map(e => `<div class="row" style="border-top:1px solid var(--line);padding-top:8px"><div class="grow"><b>${esc(e.nome)}</b> ${e.ativo?'':'<span class="tag warn">inativo</span>'}<br><small>${esc(e.cargo)} ${e.telefone?'· '+esc(e.telefone):''}</small></div>
+  <button class="ghost sm" data-ed="${e.id}">Editar</button><button class="ghost sm" data-at="${e.id}">${e.ativo?'Desativar':'Reativar'}</button><button class="red sm" data-ex="${e.id}">Excluir</button></div>`).join('') || '<p class="mut">Nenhum funcionário cadastrado.</p>'}
+  <p class="mut"><small>Desativar mantém o histórico de faltas. Excluir apaga o funcionário e todo o histórico dele.</small></p></div>`;
+}
+bind.func = () => {
+  $('#nv').onclick = () => empForm(null);
+  $('#vi').onchange = e => { S.verInativos = e.target.checked; render(); };
+  document.querySelectorAll('[data-ed]').forEach(b => b.onclick = () => empForm(S.emps.find(e => e.id===b.dataset.ed)));
+  document.querySelectorAll('[data-at]').forEach(b => b.onclick = async () => { const e = S.emps.find(x => x.id===b.dataset.at); await ck(db.from('funcionarios').update({ativo:!e.ativo}).eq('id',e.id)); load(); });
+  document.querySelectorAll('[data-ex]').forEach(b => b.onclick = async () => { const e = S.emps.find(x => x.id===b.dataset.ex); if (!confirm(`Excluir ${e.nome} e TODO o histórico dele? Isso não pode ser desfeito.`)) return; try{ await ck(db.from('funcionarios').delete().eq('id',e.id)); }catch(x){ alert(x.message); } load(); });
+};
+function empForm(e){
+  const sc = e ? S.esc.filter(x => x.funcionario_id===e.id) : [];
+  const rows = [1,2,3,4,5,6,0].map(i => { const r = sc.find(x => x.dia_semana===i) || {folga:i===0};
+    return `<div class="row"><b class="w">${DIAS[i]}</b><label style="margin:0"><input type="checkbox" name="f${i}" ${r.folga?'checked':''}> Folga</label><input type="time" name="e${i}" value="${hhmm(r.entrada)||'08:00'}" style="width:110px"><input type="time" name="s${i}" value="${hhmm(r.saida)||'17:00'}" style="width:110px"></div>`; }).join('');
+  modal(e ? 'Editar funcionário' : 'Novo funcionário',
+    `<label>Nome<input name="nome" value="${esc(e?.nome)}"></label><label>Cargo<input name="cargo" value="${esc(e?.cargo)}"></label><label>Telefone<input name="tel" value="${esc(e?.telefone)}"></label><h4>Escala semanal</h4>${rows}`,
+    async d => {
+      const g = n => d.querySelector(`[name="${n}"]`);
+      if (!g('nome').value.trim()) throw Error('Informe o nome.');
+      const p = { nome:g('nome').value.trim(), cargo:g('cargo').value.trim()||null, telefone:g('tel').value.trim()||null };
+      let id = e?.id;
+      if (id) await ck(db.from('funcionarios').update(p).eq('id',id)); else id = (await ck(db.from('funcionarios').insert(p).select().single())).data.id;
+      const l = [0,1,2,3,4,5,6].map(i => ({ funcionario_id:id, dia_semana:i, folga:g('f'+i).checked, entrada:g('e'+i).value||null, saida:g('s'+i).value||null }));
+      await ck(db.from('escalas').upsert(l, { onConflict:'funcionario_id,dia_semana' }));
+    });
+}
+
+// ---------- Faltas ----------
+function vFaltas(){
+  const lista = S.faltas.filter(f => f.data.startsWith(S.month));
+  return `<div class="card"><div class="row"><input type="month" id="mm" value="${S.month}" style="width:170px"><span class="grow"></span><button id="nf">+ Registrar falta</button></div>
+  <div class="scroll"><table><tr><th>Data</th><th>Funcionário</th><th>Motivo</th><th>Atestado</th><th>Horas devidas</th><th>Cobertura</th><th></th></tr>
+  ${lista.map(f => `<tr><td>${fmt(f.data)}</td><td>${esc(nome(f.funcionario_id))}</td><td>${esc(f.motivo)}${f.observacao?`<br><small>${esc(f.observacao)}</small>`:''}</td>
+  <td>${f.atestado?'<span class="tag ok">Sim</span>':'Não'}</td>
+  <td>${+f.horas_devidas>0 ? `${f.horas_devidas}h ${f.horas_quitadas?'<span class="tag ok">quitadas</span>':'<span class="tag warn">pendentes</span>'}` : '—'}</td>
+  <td>${f.cobertura_id?esc(nome(f.cobertura_id)):'—'}</td>
+  <td style="white-space:nowrap"><button class="ghost sm" data-fe="${f.id}">Editar</button> ${+f.horas_devidas>0?`<button class="ghost sm" data-fq="${f.id}">${f.horas_quitadas?'Reabrir':'Quitar'}</button>`:''} <button class="red sm" data-fd="${f.id}">×</button></td></tr>`).join('') || '<tr><td colspan=7 class="mut">Nenhum registro neste mês.</td></tr>'}</table></div></div>`;
+}
+bind.faltas = () => {
+  $('#mm').onchange = e => { S.month = e.target.value || S.month; render(); };
+  $('#nf').onclick = () => faltaForm(null);
+  document.querySelectorAll('[data-fe]').forEach(b => b.onclick = () => faltaForm(S.faltas.find(f => f.id===b.dataset.fe)));
+  document.querySelectorAll('[data-fq]').forEach(b => b.onclick = async () => { const f = S.faltas.find(x => x.id===b.dataset.fq); await ck(db.from('faltas').update({horas_quitadas:!f.horas_quitadas}).eq('id',f.id)); load(); });
+  document.querySelectorAll('[data-fd]').forEach(b => b.onclick = async () => { if (!confirm('Apagar este registro?')) return; await ck(db.from('faltas').delete().eq('id',b.dataset.fd)); load(); });
+};
+function faltaForm(f){
+  const ativos = S.emps.filter(e => e.ativo || (f && (e.id===f.funcionario_id || e.id===f.cobertura_id))).map(e => [e.id, e.nome]);
+  if (!ativos.length) return alert('Cadastre funcionários primeiro.');
+  modal(f ? 'Editar registro' : 'Registrar falta',
+    `<label>Funcionário que faltou<select name="fu">${opts(ativos, f?.funcionario_id)}</select></label>
+     <label>Data<input type="date" name="dt" value="${f?.data || iso(new Date())}"></label>
+     <label>Motivo<select name="mo">${opts(MOTIVOS.map(m => [m,m]), f?.motivo)}</select></label>
+     <label><input type="checkbox" name="at" ${f?.atestado?'checked':''}> Trouxe atestado</label>
+     <label>Horas devidas (0 se não deve)<input type="number" step="0.25" min="0" name="hd" value="${f?.horas_devidas || 0}"></label>
+     <label>Quem cobriu a falta<select name="cb"><option value="">Ninguém</option>${opts(ativos, f?.cobertura_id)}</select></label>
+     <label>Observação<textarea name="ob" rows="3">${esc(f?.observacao)}</textarea></label>`,
+    async d => {
+      const g = n => d.querySelector(`[name="${n}"]`);
+      if (!g('dt').value) throw Error('Informe a data.');
+      if (g('cb').value && g('cb').value === g('fu').value) throw Error('Quem cobriu não pode ser a mesma pessoa que faltou.');
+      const p = { funcionario_id:g('fu').value, data:g('dt').value, motivo:g('mo').value, atestado:g('at').checked, horas_devidas:+g('hd').value||0, cobertura_id:g('cb').value||null, observacao:g('ob').value.trim()||null };
+      if (f) await ck(db.from('faltas').update(p).eq('id',f.id)); else await ck(db.from('faltas').insert(p));
+      S.month = p.data.slice(0,7);
+    });
+}
+
+// ---------- Feriados ----------
+function vFeriados(){
+  const m = feriados(S.year), lista = Object.entries(m).filter(([k]) => k.startsWith(S.year)).sort();
+  return `<div class="card"><div class="row"><button class="ghost sm" id="ya">‹</button><b>${S.year}</b><button class="ghost sm" id="yp">›</button><span class="grow"></span><button id="nfe">+ Feriado extra</button></div>
+  ${lista.map(([k,n]) => { const ex = S.extras.find(e => e.data===k); return `<div class="row" style="border-top:1px solid var(--line)"><span class="w" style="width:90px">${fmt(k)}</span><span>${DIAS[parse(k).getDay()]}</span><span class="grow">${esc(n)}</span>${ex?`<button class="red sm" data-xd="${ex.id}">×</button>`:''}</div>`; }).join('')}
+  <p class="mut"><small>Feriados nacionais são calculados automaticamente. Use "feriado extra" para municipais ou recesso da empresa.</small></p></div>`;
+}
+bind.feriados = () => {
+  $('#ya').onclick = () => { S.year--; render(); }; $('#yp').onclick = () => { S.year++; render(); };
+  $('#nfe').onclick = () => modal('Feriado extra', `<label>Data<input type="date" name="dt"></label><label>Nome<input name="nm"></label>`, async d => {
+    const dt = d.querySelector('[name="dt"]').value, nm = d.querySelector('[name="nm"]').value.trim();
+    if (!dt || !nm) throw Error('Informe data e nome.');
+    await ck(db.from('feriados_extras').insert({ data:dt, nome:nm })); S.year = +dt.slice(0,4);
+  });
+  document.querySelectorAll('[data-xd]').forEach(b => b.onclick = async () => { await ck(db.from('feriados_extras').delete().eq('id',b.dataset.xd)); load(); });
+};
+
+// ---------- Resumo para os donos ----------
+function resumoMes(){
+  const fm = S.faltas.filter(f => f.data.startsWith(S.month));
+  return S.emps.filter(e => e.ativo || fm.some(f => f.funcionario_id===e.id)).map(e => ({
+    nome:e.nome,
+    faltas:fm.filter(f => f.funcionario_id===e.id && !f.atestado).length,
+    atestados:fm.filter(f => f.funcionario_id===e.id && f.atestado).length,
+    coberturas:fm.filter(f => f.cobertura_id===e.id).length,
+    pend:S.faltas.filter(f => f.funcionario_id===e.id && !f.horas_quitadas).reduce((s,f) => s + +f.horas_devidas, 0)
+  }));
+}
+function vResumo(){
+  const r = resumoMes(), fm = S.faltas.filter(f => f.data.startsWith(S.month));
+  const tot = k => r.reduce((s,x) => s + x[k], 0);
+  return `<div class="card"><div class="row"><input type="month" id="mm" value="${S.month}" style="width:170px"><span class="grow"></span><button class="ghost" id="cp">Copiar texto</button><button class="ghost" id="csv">Baixar CSV</button><button class="ghost" id="pr">Imprimir</button></div>
+  <div class="stats"><div class="stat"><b>${tot('faltas')}</b>faltas sem atestado</div><div class="stat"><b>${tot('atestados')}</b>atestados</div><div class="stat"><b>${tot('coberturas')}</b>coberturas</div><div class="stat"><b>${tot('pend')}h</b>horas pendentes (total)</div></div></div>
+  <div class="card scroll"><table><tr><th>Funcionário</th><th>Faltas</th><th>Atestados</th><th>Coberturas feitas</th><th>Horas devendo</th></tr>
+  ${r.map(x => `<tr><td>${esc(x.nome)}</td><td>${x.faltas}</td><td>${x.atestados}</td><td>${x.coberturas}</td><td>${x.pend>0?`<span class="tag warn">${x.pend}h</span>`:'—'}</td></tr>`).join('')}</table></div>`;
+}
+function textoResumo(){
+  const fm = S.faltas.filter(f => f.data.startsWith(S.month)).sort((a,b) => a.data.localeCompare(b.data));
+  const [y,m] = S.month.split('-');
+  let t = `RESUMO DA EQUIPE — ${m}/${y}\n\n`;
+  t += fm.length ? fm.map(f => `${fmt(f.data)} — ${nome(f.funcionario_id)}: ${f.motivo}${f.atestado?' (com atestado)':''}${+f.horas_devidas>0?`, deve ${f.horas_devidas}h${f.horas_quitadas?' (quitadas)':''}`:''}${f.cobertura_id?`, coberto por ${nome(f.cobertura_id)}`:''}${f.observacao?` — ${f.observacao}`:''}`).join('\n') : 'Nenhuma ocorrência no mês.';
+  const pend = resumoMes().filter(x => x.pend>0);
+  if (pend.length) t += '\n\nHORAS PENDENTES:\n' + pend.map(x => `${x.nome}: ${x.pend}h`).join('\n');
+  return t;
+}
+bind.resumo = () => {
+  $('#mm').onchange = e => { S.month = e.target.value || S.month; render(); };
+  $('#pr').onclick = () => window.print();
+  $('#cp').onclick = async () => { try{ await navigator.clipboard.writeText(textoResumo()); alert('Resumo copiado.'); }catch{ prompt('Copie o texto:', textoResumo()); } };
+  $('#csv').onclick = () => {
+    const q = s => '"' + String(s ?? '').replace(/"/g,'""') + '"';
+    const linhas = [['Data','Funcionário','Motivo','Atestado','Horas devidas','Quitadas','Coberta por','Observação']].concat(S.faltas.filter(f => f.data.startsWith(S.month)).map(f => [fmt(f.data), nome(f.funcionario_id), f.motivo, f.atestado?'Sim':'Não', f.horas_devidas, f.horas_quitadas?'Sim':'Não', f.cobertura_id?nome(f.cobertura_id):'', f.observacao]));
+    const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob(['\ufeff' + linhas.map(l => l.map(q).join(';')).join('\n')], {type:'text/csv'})); a.download = `faltas-${S.month}.csv`; a.click();
+  };
+};
+
+start();
+</script>
+</body>
+</html>
