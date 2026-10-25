@@ -5,47 +5,56 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Escala da Equipe</title>
 <link rel="manifest" href="manifest.json">
-<meta name="theme-color" content="#f6f7f9">
+<meta name="theme-color" content="#eef3f7">
 <link rel="icon" href="icon-192.png">
 <link rel="apple-touch-icon" href="icon-192.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Escala">
 <style>
-:root{--bg:#f6f7f9;--card:#fff;--ink:#1f2933;--mut:#6b7785;--line:#e6e9ee;--pri:#2f6f8f;--onpri:#fff;--ok:#2f855a;--bad:#c0392b;--warn:#b7791f;--hol:#fdf3d7}
-@media(prefers-color-scheme:dark){:root{--bg:#12171c;--card:#1b2229;--ink:#e8edf2;--mut:#93a0ad;--line:#2a333c;--pri:#7fb6d3;--onpri:#0f1b24;--ok:#5cc08f;--bad:#ee8378;--warn:#e0b050;--hol:#3a3216}}
+:root{--bg:#eef3f7;--ink:#1c2630;--mut:#66727f;--pri:#2f6f8f;--onpri:#fff;--ok:#2f855a;--bad:#c0392b;--warn:#a96f12;--hol:rgba(253,236,185,.75);
+--card:rgba(255,255,255,.52);--glass2:rgba(255,255,255,.35);--sheet:rgba(255,255,255,.82);--edge:rgba(255,255,255,.8);--line:rgba(60,80,100,.12);--field:rgba(255,255,255,.65);--pill:rgba(47,111,143,.16);
+--shd:0 8px 28px rgba(40,70,100,.10);--b1:#bfe0f0;--b2:#d9d3f5;--b3:#c6eddf}
+@media(prefers-color-scheme:dark){:root{--bg:#0d1318;--ink:#e8edf2;--mut:#9aa7b4;--pri:#7fb6d3;--onpri:#0f1b24;--ok:#5cc08f;--bad:#ee8378;--warn:#e0b050;--hol:rgba(110,90,25,.5);
+--card:rgba(32,44,56,.5);--glass2:rgba(255,255,255,.06);--sheet:rgba(24,34,44,.86);--edge:rgba(255,255,255,.15);--line:rgba(255,255,255,.10);--field:rgba(255,255,255,.07);--pill:rgba(127,182,211,.22);
+--shd:0 8px 28px rgba(0,0,0,.35);--b1:#1b4660;--b2:#312e5c;--b3:#15463c}}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.4 system-ui,-apple-system,Segoe UI,Roboto,sans-serif;padding-bottom:96px}
+html{background:var(--bg)}
+body{margin:0;color:var(--ink);font:16px/1.4 system-ui,-apple-system,Segoe UI,Roboto,sans-serif;padding-bottom:112px;min-height:100vh}
+body::before{content:"";position:fixed;inset:0;z-index:-1;background:radial-gradient(60% 38% at 8% 0%,var(--b1),transparent 72%),radial-gradient(50% 38% at 100% 28%,var(--b2),transparent 72%),radial-gradient(65% 42% at 15% 100%,var(--b3),transparent 72%)}
+.card,.stat,.qa button,.dc,.bn{background:var(--card);-webkit-backdrop-filter:blur(22px) saturate(170%);backdrop-filter:blur(22px) saturate(170%);border:1px solid var(--edge);box-shadow:var(--shd),inset 0 1px 0 var(--edge)}
+@supports not (backdrop-filter:blur(1px)){.card,.stat,.qa button,.dc,.bn{background:var(--sheet)}}
 .hd{padding:calc(18px + env(safe-area-inset-top)) 18px 12px}
-.hd small{color:var(--mut);text-transform:capitalize}.hd h1{font-size:26px;margin:2px 0 0;font-weight:700}
-.bk{background:none;padding:0 0 8px;min-height:0;font-size:15px;color:var(--pri);border:0}
+.hd small{color:var(--mut);text-transform:capitalize}.hd h1{font-size:27px;margin:2px 0 0;font-weight:700;letter-spacing:-.3px}
+.bk{background:none;box-shadow:none;border:0;padding:0 0 8px;min-height:0;font-size:15px;color:var(--pri)}
 main{padding:0 14px;max-width:560px;margin:0 auto}
-.card{background:var(--card);border-radius:20px;padding:16px;margin-bottom:14px;box-shadow:0 1px 3px #1f293314}
+.card{border-radius:26px;padding:16px;margin-bottom:14px}
 .card>b:first-child,.card h3{display:block;margin-bottom:6px}
 .row{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:6px 0}.row.end{justify-content:flex-end}.grow{flex:1}
-button{background:var(--pri);color:var(--onpri);border:0;border-radius:14px;padding:12px 16px;min-height:46px;font:inherit;font-weight:600;cursor:pointer}
-button.ghost{background:none;color:var(--pri);border:1px solid var(--line)}button.red{background:var(--bad)}button.sm{padding:6px 12px;min-height:38px;font-size:14px}
-button.ghost.red{background:none;color:var(--bad)}
-input,select,textarea{font:inherit;font-size:16px;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:12px;width:100%}
+button{background:linear-gradient(180deg,color-mix(in srgb,var(--pri) 80%,#fff),var(--pri));color:var(--onpri);border:1px solid var(--edge);border-radius:18px;padding:12px 16px;min-height:46px;font:inherit;font-weight:600;cursor:pointer;box-shadow:inset 0 1px 0 #ffffff55,0 4px 12px color-mix(in srgb,var(--pri) 28%,transparent)}
+button.ghost{background:var(--glass2);color:var(--pri);box-shadow:none;-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px)}
+button.red{background:var(--bad);color:#fff}button.ghost.red{background:var(--glass2);color:var(--bad)}button.sm{padding:6px 12px;min-height:38px;font-size:14px}
+input,select,textarea{font:inherit;font-size:16px;color:var(--ink);background:var(--field);border:1px solid var(--line);border-radius:14px;padding:12px;width:100%}
 input[type=checkbox]{width:20px;height:20px;vertical-align:middle;margin-right:6px}
 label{display:block;margin:10px 0;color:var(--mut);font-size:14px}label input,label select,label textarea{margin-top:4px}
 .tag{display:inline-block;border-radius:20px;padding:3px 10px;font-size:12px;font-weight:700;white-space:nowrap}
-.tag.bad{background:color-mix(in srgb,var(--bad) 14%,transparent);color:var(--bad)}.tag.ok{background:color-mix(in srgb,var(--ok) 14%,transparent);color:var(--ok)}.tag.warn{background:color-mix(in srgb,var(--warn) 16%,transparent);color:var(--warn)}.tag.gr{background:var(--line);color:var(--mut)}
+.tag.bad{background:color-mix(in srgb,var(--bad) 15%,transparent);color:var(--bad)}.tag.ok{background:color-mix(in srgb,var(--ok) 15%,transparent);color:var(--ok)}.tag.warn{background:color-mix(in srgb,var(--warn) 17%,transparent);color:var(--warn)}.tag.gr{background:var(--line);color:var(--mut)}
 small,.mut{color:var(--mut)}.w{width:38px}
-.it{display:flex;gap:12px;align-items:center;padding:12px 0;border-top:1px solid var(--line);cursor:pointer}.it:first-of-type{border-top:0}
-.av{width:44px;height:44px;border-radius:50%;background:color-mix(in srgb,var(--pri) 18%,transparent);color:var(--pri);display:grid;place-items:center;font-weight:800;flex:none}
+.it{display:flex;gap:12px;align-items:center;padding:12px 0;border-top:1px solid var(--line);cursor:pointer}
+.av{width:44px;height:44px;border-radius:50%;background:color-mix(in srgb,var(--pri) 16%,transparent);border:1px solid var(--edge);color:var(--pri);display:grid;place-items:center;font-weight:800;flex:none}
 .qa{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
-.qa button{background:var(--card);color:var(--ink);border-radius:20px;padding:16px 8px;display:flex;flex-direction:column;gap:6px;align-items:center;box-shadow:0 1px 3px #1f293314}.qa svg{width:26px;height:26px;color:var(--pri)}
-.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px}.stat{background:var(--card);border-radius:18px;padding:12px;text-align:center;font-size:12px;color:var(--mut)}.stat b{display:block;font-size:24px;color:var(--ink)}
-.days{display:flex;gap:6px;margin:10px 0 14px}.dc{flex:1;min-width:0;padding:8px 0;border-radius:16px;background:var(--card);color:var(--ink);display:flex;flex-direction:column;align-items:center;font-size:12px;font-weight:500;min-height:64px;gap:0}.dc b{font-size:17px}.dc.on{background:var(--pri);color:var(--onpri)}.dc span{width:5px;height:5px;border-radius:50%;background:var(--warn);margin-top:3px}.dc.on span{background:var(--onpri)}
-.ban{background:var(--hol);border-radius:12px;padding:8px 12px;margin-bottom:8px;font-weight:600}
-.bn{position:fixed;bottom:0;left:0;right:0;background:var(--card);border-top:1px solid var(--line);display:flex;padding:8px 4px calc(8px + env(safe-area-inset-bottom));z-index:9}
-.bn button{background:none;color:var(--mut);flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;font-size:12px;padding:0;min-height:0;font-weight:500}
-.bn i{font-style:normal;font-size:20px;width:56px;height:32px;border-radius:16px;display:grid;place-items:center}
-.bn .on{color:var(--pri);font-weight:700}.bn .on i{background:color-mix(in srgb,var(--pri) 18%,transparent)}
-.fab{position:fixed;right:18px;bottom:calc(88px + env(safe-area-inset-bottom));width:58px;height:58px;border-radius:50%;font-size:30px;padding:0;box-shadow:0 4px 12px #0003;z-index:8}
-dialog{border:0;border-radius:24px 24px 0 0;background:var(--card);color:var(--ink);width:100%;max-width:560px;margin:auto auto 0;padding:18px 18px calc(18px + env(safe-area-inset-bottom));max-height:92vh;overflow:auto}
-dialog::backdrop{background:#0009}
-@media print{.hd,.bn,.fab,button{display:none}body{background:#fff;color:#000}}
+.qa button{color:var(--ink);border-radius:22px;padding:16px 8px;display:flex;flex-direction:column;gap:6px;align-items:center}.qa svg{width:26px;height:26px;color:var(--pri)}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px}.stat{border-radius:20px;padding:12px;text-align:center;font-size:12px;color:var(--mut)}.stat b{display:block;font-size:22px;color:var(--ink)}
+.days{display:flex;gap:6px;margin:10px 0 14px}.dc{flex:1;min-width:0;padding:8px 0;border-radius:18px;color:var(--ink);display:flex;flex-direction:column;align-items:center;font-size:12px;font-weight:500;min-height:64px;gap:0}.dc b{font-size:17px}
+.dc.on{background:linear-gradient(180deg,color-mix(in srgb,var(--pri) 80%,#fff),var(--pri));color:var(--onpri)}.dc span{width:5px;height:5px;border-radius:50%;background:var(--warn);margin-top:3px}.dc.on span{background:var(--onpri)}
+.ban{background:var(--hol);border-radius:14px;padding:8px 12px;margin-bottom:8px;font-weight:600}
+.bn{position:fixed;left:14px;right:14px;bottom:calc(10px + env(safe-area-inset-bottom));max-width:532px;margin:0 auto;border-radius:32px;display:flex;padding:6px;z-index:9}
+.bn button{background:none;box-shadow:none;border:0;color:var(--mut);flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;font-size:12px;padding:0;min-height:0;font-weight:500}
+.bn i{font-style:normal;width:60px;height:34px;border-radius:17px;display:grid;place-items:center}
+.bn .on{color:var(--pri);font-weight:700}.bn .on i{background:var(--pill);box-shadow:inset 0 1px 0 var(--edge)}
+.fab{position:fixed;right:20px;bottom:calc(96px + env(safe-area-inset-bottom));width:58px;height:58px;border-radius:50%;font-size:30px;padding:0;z-index:8}
+dialog{border:1px solid var(--edge);border-bottom:0;border-radius:30px 30px 0 0;background:var(--sheet);-webkit-backdrop-filter:blur(30px) saturate(180%);backdrop-filter:blur(30px) saturate(180%);color:var(--ink);width:100%;max-width:560px;margin:auto auto 0;padding:18px 18px calc(18px + env(safe-area-inset-bottom));max-height:92vh;overflow:auto}
+dialog::backdrop{background:#0a14204d;-webkit-backdrop-filter:blur(3px);backdrop-filter:blur(3px)}
+@media print{.hd,.bn,.fab,button{display:none}body{background:#fff;color:#000}body::before{display:none}}
 </style>
 </head>
 <body>
@@ -66,7 +75,7 @@ const monday = d => { const x = new Date(d); x.setDate(x.getDate() - (x.getDay()
 const ck = async q => { const r = await q; if (r.error) throw r.error; return r; };
 const hhmm = t => (t||'').slice(0,5);
 
-let S = { tab:'inicio', dias:[], emps:[], esc:[], faltas:[], extras:[], day:iso(new Date()), month:iso(new Date()).slice(0,7), year:new Date().getFullYear(), verInativos:false };
+let S = { tab:'inicio', dias:[], sm:iso(new Date()).slice(0,7), emps:[], esc:[], faltas:[], extras:[], day:iso(new Date()), month:iso(new Date()).slice(0,7), year:new Date().getFullYear(), verInativos:false };
 
 // ---------- Feriados nacionais (calculados para qualquer ano) ----------
 function pascoa(y){const a=y%19,b=Math.floor(y/100),c=y%100,d=Math.floor(b/4),e=b%4,f=Math.floor((b+8)/25),g=Math.floor((b-f+1)/3),h=(19*a+b-d-g+15)%30,i=Math.floor(c/4),k=c%4,l=(32+2*e+2*i-h-k)%7,m=Math.floor((a+11*h+22*l)/451),mes=Math.floor((h+l-7*m+114)/31),dia=((h+l-7*m+114)%31)+1;return new Date(y,mes-1,dia);}
@@ -127,17 +136,18 @@ async function start(){
 const IC={home:'<path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/>',cal:'<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/>',clip:'<rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4v2h6V4M9 11h6M9 15h4"/>',users:'<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c0-3.6 2.9-6 6.5-6s6.5 2.4 6.5 6"/><path d="M16 4.6a3.5 3.5 0 010 6.8M18 14.4c2.2.7 3.5 2.6 3.5 5.6"/>',more:'<circle cx="5" cy="12" r="1.3" fill="currentColor"/><circle cx="12" cy="12" r="1.3" fill="currentColor"/><circle cx="19" cy="12" r="1.3" fill="currentColor"/>',edit:'<path d="M4 20h4L19 9l-4-4L4 16z"/>',uplus:'<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c0-3.6 2.9-6 6.5-6 1.4 0 2.6.3 3.6.9M18 8v6M15 11h6"/>',chart:'<path d="M4 20V10M10 20V4M16 20v-8M22 20H2"/>',star:'<path d="M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1L3.2 9.5l6.1-.9z"/>',user:'<circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7"/>',out:'<path d="M9 4H5a1 1 0 00-1 1v14a1 1 0 001 1h4M16 8l4 4-4 4M20 12H9"/>',chev:'<path d="M9 6l6 6-6 6"/>'};
 const ic=n=>`<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${IC[n]}</svg>`;
 const NAV=[['inicio','Início','home'],['escala','Escala','cal'],['faltas','Faltas','clip'],['func','Equipe','users'],['mais','Mais','more']];
-const SUB={feriados:'Feriados',resumo:'Resumo para os donos',conta:'Minha conta'};
+const SUB={feriados:'Feriados',resumo:'Resumo para os donos',conta:'Minha conta',sabados:'Escala dos sábados',ponto:'Folha de ponto'};
+const BACK={sabados:['escala','Escala'],ponto:['func','Equipe']};
 const bind = {};
 function render(){
-  const t=S.tab, sub=SUB[t], nav=sub?'mais':t, u=(S.user&&S.user.user_metadata)||{};
+  const t=S.tab, sub=SUB[t], nav=BACK[t]?BACK[t][0]:sub?'mais':t, u=(S.user&&S.user.user_metadata)||{};
   const tit={inicio:'Olá, '+esc(u.nome||'gerente'),escala:'Escala',faltas:'Faltas',func:'Equipe',mais:'Mais'};
-  const V={inicio:vInicio,escala:vEscala,faltas:vFaltas,func:vFunc,mais:vMais,feriados:vFeriados,resumo:vResumo,conta:vConta};
-  $('#app').innerHTML=`<div class="hd">${sub?'<button class="bk" id="bk">‹ Mais</button><br>':''}<small>${new Date().toLocaleDateString('pt-BR',{weekday:'long',day:'numeric',month:'long'})}</small><h1>${sub||tit[t]}</h1></div>
+  const V={inicio:vInicio,escala:vEscala,faltas:vFaltas,func:vFunc,mais:vMais,feriados:vFeriados,resumo:vResumo,conta:vConta,sabados:vSabados,ponto:vPonto};
+  $('#app').innerHTML=`<div class="hd">${sub?`<button class="bk" id="bk">‹ ${(BACK[t]||['mais','Mais'])[1]}</button><br>`:''}<small>${new Date().toLocaleDateString('pt-BR',{weekday:'long',day:'numeric',month:'long'})}</small><h1>${sub||tit[t]}</h1></div>
   <main>${V[t]()}</main>${(t==='faltas'||t==='func')?'<button class="fab" id="fab">+</button>':''}
   <nav class="bn">${NAV.map(([k,n,i])=>`<button class="${nav===k?'on':''}" data-t="${k}"><i>${ic(i)}</i>${n}</button>`).join('')}</nav>`;
   document.querySelectorAll('.bn button').forEach(b=>b.onclick=()=>{S.tab=b.dataset.t;render();scrollTo(0,0)});
-  if($('#bk'))$('#bk').onclick=()=>{S.tab='mais';render()};
+  if($('#bk'))$('#bk').onclick=()=>{S.tab=(BACK[t]||['mais'])[0];render()};
   if($('#fab'))$('#fab').onclick=()=>t==='faltas'?faltaForm(null):empForm(null);
   bind[t]&&bind[t]();
 }
@@ -184,7 +194,7 @@ bind.inicio=()=>{
 
 // ---------- Mais ----------
 function vMais(){
-  return `<div class="card">${[['feriados','star','Feriados','Nacionais e extras'],['resumo','chart','Resumo para os donos','Mês, texto, CSV e impressão'],['conta','user','Minha conta','Perfil, senha e instalar app']].map(([k,i,t,d])=>`<div class="it" data-go="${k}"><div class="av">${ic(i)}</div><div class="grow"><b>${t}</b><br><small>${d}</small></div>${ic('chev')}</div>`).join('')}
+  return `<div class="card">${[['sabados','cal','Escala dos sábados','Planeje o mês inteiro'],['feriados','star','Feriados','Nacionais e extras'],['resumo','chart','Resumo para os donos','Mês, texto, CSV e impressão'],['conta','user','Minha conta','Perfil, senha e instalar app']].map(([k,i,t,d])=>`<div class="it" data-go="${k}"><div class="av">${ic(i)}</div><div class="grow"><b>${t}</b><br><small>${d}</small></div>${ic('chev')}</div>`).join('')}
   <div class="it" id="so"><div class="av">${ic('out')}</div><div class="grow"><b>Sair</b></div></div></div>`;
 }
 bind.mais=()=>{
@@ -200,33 +210,83 @@ function vEscala(){
     return `<div class="it" data-e="${e.id}"><div class="av">${esc((e.nome[0]||'?').toUpperCase())}</div><div class="grow"><b>${esc(e.nome)}</b><br><small>${dd.length} de ${e.dias_semana} dias · ${dd.map(d=>DIAS[d.getDay()]).join(', ')||'nenhum dia escalado'}</small></div><span class="tag ${ok?'ok':'warn'}">${ok?'Completo':'Faltam '+(e.dias_semana-dd.length)}</span></div>`}).join('');
   return `<div class="card" style="padding:10px"><div class="row" style="margin:0"><button class="ghost sm" id="pv">‹</button><b class="grow" style="text-align:center;margin:0">${dias[0].toLocaleDateString('pt-BR',{day:'numeric',month:'short'})} a ${dias[6].toLocaleDateString('pt-BR',{day:'numeric',month:'short'})}</b><button class="ghost sm" id="nx">›</button></div></div>
   <div class="days">${dias.map(d=>{const q=iso(d);return `<button class="dc ${q===k?'on':''}" data-d="${q}">${DIAS[d.getDay()]}<b>${d.getDate()}</b><span style="${H[q]?'':'visibility:hidden'}"></span></button>`}).join('')}</div>
-  <div class="card"><b>${parse(k).toLocaleDateString('pt-BR',{weekday:'long',day:'numeric',month:'long'})}</b>${H[k]?`<div class="ban">Feriado · ${esc(H[k])}</div>`:''}${lista.map(e=>item(e,k)).join('')||'<p class="mut">Ninguém escalado neste dia.</p>'}${folga.length?`<p class="mut"><small>De folga: ${folga.map(e=>esc(e.nome)).join(', ')}</small></p>`:''}<button class="ghost" id="esd" style="width:100%;margin-top:6px">Escalar neste dia</button></div>
+  <div class="card"><b>${parse(k).toLocaleDateString('pt-BR',{weekday:'long',day:'numeric',month:'long'})}</b>${H[k]?`<div class="ban">Feriado · ${esc(H[k])}</div>`:''}${lista.map(e=>item(e,k)).join('')||'<p class="mut">Ninguém escalado neste dia.</p>'}${folga.length?`<p class="mut"><small>De folga: ${folga.map(e=>esc(e.nome)).join(', ')}</small></p>`:''}<div class="row"><button class="ghost grow" id="esd">Escalar neste dia</button><button class="ghost grow" id="sbd">Sábados do mês</button></div></div>
   ${semana?`<div class="card"><b>Semana · funcionários flexíveis</b>${semana}</div>`:''}`;
 }
 bind.escala=()=>{
   const k=S.day,mv=n=>{const d=parse(S.day);d.setDate(d.getDate()+n);S.day=iso(d);render()};
-  $('#pv').onclick=()=>mv(-7);$('#nx').onclick=()=>mv(7);$('#esd').onclick=()=>diaForm(k,null);
+  $('#pv').onclick=()=>mv(-7);$('#nx').onclick=()=>mv(7);$('#esd').onclick=()=>diaForm(k,null);$('#sbd').onclick=()=>{S.tab='sabados';render()};
   document.querySelectorAll('.dc').forEach(b=>b.onclick=()=>{S.day=b.dataset.d;render()});
   document.querySelectorAll('.it[data-e]').forEach(l=>l.onclick=()=>{
     const e=S.emps.find(x=>x.id===l.dataset.e),ov=S.dias.find(x=>x.funcionario_id===e.id&&x.data===k),b=[[ov?'Alterar horário deste dia':'Escalar neste dia',()=>diaForm(k,e)]];
     if(ov)b.push(['Remover escala deste dia',async()=>{await ck(db.from('escalas_dia').delete().eq('id',ov.id));load()},'red']);
+    if(e.tipo==='flexivel')b.push(['Folha de ponto',()=>{S.pe=e.id;S.tab='ponto';render()}]);
     b.push(['Editar cadastro e escala fixa',()=>empForm(e)]);
     sheet(esc(e.nome)+' · '+fmt(k),b);
   });
 };
-function diaForm(k,e0){
+const horas=(en,sa)=>{const [a,b]=en.split(':').map(Number),[c,d]=sa.split(':').map(Number);return Math.max(0,(c*60+d)-(a*60+b))/60};
+const fh=h=>{const m=Math.round(h*60);return Math.floor(m/60)+'h'+(m%60?p2(m%60):'')};
+function diaForm(k,e0,livre){
   const l=S.emps.filter(e=>e.ativo).map(e=>[e.id,e.nome]);if(!l.length)return alert('Cadastre funcionários primeiro.');
   const ov=e0&&S.dias.find(x=>x.funcionario_id===e0.id&&x.data===k);
-  modal('Escalar em '+fmt(k),`<label>Funcionário<select name="fu">${opts(l,e0&&e0.id)}</select></label><div class="row"><label class="grow">Entrada<input type="time" name="en" value="${hhmm(ov&&ov.entrada)||'07:00'}"></label><label class="grow">Saída<input type="time" name="sa" value="${hhmm(ov&&ov.saida)||'12:00'}"></label></div><p class="mut"><small>Para funcionário flexível, a saída é calculada pelas horas por dia (você pode ajustar).</small></p>`,async d=>{
-    const g=n=>d.querySelector(`[name="${n}"]`);
+  modal(livre?'Registrar dia trabalhado':'Escalar em '+fmt(k),`<label>Funcionário<select name="fu">${opts(l,e0&&e0.id)}</select></label>${livre?`<label>Data<input type="date" name="dt" value="${k}"></label>`:''}<div class="row"><label class="grow">${livre?'Chegada':'Entrada'}<input type="time" name="en" value="${hhmm(ov&&ov.entrada)||'07:00'}"></label><label class="grow">Saída<input type="time" name="sa" value="${hhmm(ov&&ov.saida)||'12:00'}"></label></div><p class="mut"><small>${livre?'Digite os horários da folhinha dela.':'Para funcionário flexível, a saída é calculada pelas horas por dia (você pode ajustar).'}</small></p>`,async d=>{
+    const g=n=>d.querySelector(`[name="${n}"]`),dt=livre?g('dt').value:k;
+    if(!dt)throw Error('Informe a data.');
     if(!g('en').value||!g('sa').value)throw Error('Informe entrada e saída.');
     if(g('sa').value<=g('en').value)throw Error('A saída precisa ser depois da entrada.');
-    await ck(db.from('escalas_dia').upsert({funcionario_id:g('fu').value,data:k,entrada:g('en').value,saida:g('sa').value},{onConflict:'funcionario_id,data'}));
+    await ck(db.from('escalas_dia').upsert({funcionario_id:g('fu').value,data:dt,entrada:g('en').value,saida:g('sa').value},{onConflict:'funcionario_id,data'}));
   });
   const d=[...document.querySelectorAll('dialog')].pop(),g=n=>d.querySelector(`[name="${n}"]`);
   const auto=()=>{const e=S.emps.find(x=>x.id===g('fu').value);if(e&&e.tipo==='flexivel'&&g('en').value){const [h,m]=g('en').value.split(':').map(Number),t=h*60+m+Math.round(e.horas_dia*60);g('sa').value=p2(Math.floor(t/60)%24)+':'+p2(t%60)}};
-  g('en').oninput=auto;g('fu').onchange=auto;if(!ov)auto();
+  g('en').oninput=auto;g('fu').onchange=auto;if(!ov&&!livre)auto();
 }
+
+// ---------- Sábados do mês ----------
+const sabadosDoMes=ym=>{const [y,m]=ym.split('-').map(Number),r=[],d=new Date(y,m-1,1);while(d.getMonth()===m-1){if(d.getDay()===6)r.push(iso(d));d.setDate(d.getDate()+1)}return r};
+function vSabados(){
+  const H=feriados(+S.sm.slice(0,4));
+  return `<div class="card" style="padding:10px"><input type="month" id="sm" value="${S.sm}"></div>
+  ${sabadosDoMes(S.sm).map(k=>{const es=S.dias.filter(x=>x.data===k).sort((a,b)=>a.entrada.localeCompare(b.entrada));
+    return `<div class="card"><div class="row" style="margin:0"><b class="grow" style="margin:0">Sábado ${fmt(k)}</b>${H[k]?`<span class="tag warn">${esc(H[k])}</span>`:''}</div>
+    ${es.map(x=>`<div class="it" data-sx="${x.id}"><div class="av">${esc((nome(x.funcionario_id)[0]||'?').toUpperCase())}</div><div class="grow"><b>${esc(nome(x.funcionario_id))}</b><br><small>${hhmm(x.entrada)} às ${hhmm(x.saida)}</small></div></div>`).join('')||'<p class="mut"><small>Nada escalado ainda.</small></p>'}
+    <div class="row"><button class="ghost grow sm" data-t2="${k}">Escalar dois turnos</button><button class="ghost grow sm" data-t1="${k}">Adicionar pessoa</button></div></div>`}).join('')}`;
+}
+bind.sabados=()=>{
+  $('#sm').onchange=e=>{S.sm=e.target.value||S.sm;render()};
+  document.querySelectorAll('[data-t2]').forEach(b=>b.onclick=()=>turnosForm(b.dataset.t2));
+  document.querySelectorAll('[data-t1]').forEach(b=>b.onclick=()=>diaForm(b.dataset.t1,null));
+  document.querySelectorAll('.it[data-sx]').forEach(l=>l.onclick=()=>{const x=S.dias.find(y=>y.id===l.dataset.sx),e=S.emps.find(y=>y.id===x.funcionario_id);
+    sheet(esc(e.nome)+' · '+fmt(x.data),[['Alterar horário',()=>diaForm(x.data,e)],['Remover deste sábado',async()=>{await ck(db.from('escalas_dia').delete().eq('id',x.id));load()},'red']])});
+};
+function turnosForm(k){
+  const fix=S.emps.filter(e=>e.ativo&&e.tipo!=='flexivel'),l=[['','Ninguém'],...fix.map(e=>[e.id,e.nome])],ids=fix.map(e=>e.id);
+  const cur=S.dias.filter(x=>x.data===k&&ids.includes(x.funcionario_id)).sort((a,b)=>a.entrada.localeCompare(b.entrada)),a=cur[0],b=cur[1];
+  const t=(n,x,en,sa,tt)=>`<b>${tt}</b><label>Funcionário<select name="${n}">${opts(l,x?x.funcionario_id:'')}</select></label><div class="row"><label class="grow">Entrada<input type="time" name="${n}e" value="${x?hhmm(x.entrada):en}"></label><label class="grow">Saída<input type="time" name="${n}s" value="${x?hhmm(x.saida):sa}"></label></div>`;
+  modal('Sábado '+fmt(k),t('a',a,'07:00','12:00','1º turno')+t('b',b,'12:00','17:00','2º turno')+'<p class="mut"><small>Salvar substitui os turnos dos funcionários fixos neste sábado.</small></p>',async d=>{
+    const g=n=>d.querySelector(`[name="${n}"]`),rows=[];
+    for(const n of ['a','b']){const fu=g(n).value;if(!fu)continue;const en=g(n+'e').value,sa=g(n+'s').value;if(!en||!sa||sa<=en)throw Error('Confira os horários do '+(n==='a'?'1º':'2º')+' turno.');rows.push({funcionario_id:fu,data:k,entrada:en,saida:sa})}
+    if(rows.length===2&&rows[0].funcionario_id===rows[1].funcionario_id)throw Error('Escolha pessoas diferentes em cada turno.');
+    if(ids.length)await ck(db.from('escalas_dia').delete().eq('data',k).in('funcionario_id',ids));
+    if(rows.length)await ck(db.from('escalas_dia').insert(rows));
+  });
+}
+
+// ---------- Folha de ponto (funcionário flexível) ----------
+function vPonto(){
+  const e=S.emps.find(x=>x.id===S.pe);if(!e)return '<div class="card mut">Funcionário não encontrado.</div>';
+  const l=S.dias.filter(x=>x.funcionario_id===e.id&&x.data.startsWith(S.month)).sort((a,b)=>a.data.localeCompare(b.data)),tot=l.reduce((s,x)=>s+horas(x.entrada,x.saida),0);
+  return `<div class="card" style="padding:10px"><input type="month" id="pm" value="${S.month}"></div>
+  <div class="stats"><div class="stat"><b>${l.length}</b>dias no mês</div><div class="stat"><b>${fh(tot)}</b>horas no mês</div><div class="stat"><b>${e.dias_semana}×${e.horas_dia}h</b>combinado por semana</div></div>
+  <div class="card"><b>${esc(e.nome)}</b>${l.map(x=>{const h=horas(x.entrada,x.saida);return `<div class="it" data-px="${x.id}"><div class="grow"><b>${fmt(x.data)}</b> <small>${DIAS[parse(x.data).getDay()]}</small><br><small>${hhmm(x.entrada)} às ${hhmm(x.saida)}</small></div><span class="tag ${h>=e.horas_dia?'ok':'warn'}">${fh(h)}</span></div>`}).join('')||'<p class="mut">Nenhum dia registrado neste mês.</p>'}<button id="pa" style="width:100%;margin-top:10px">Registrar dia trabalhado</button></div>`;
+}
+bind.ponto=()=>{
+  const e=S.emps.find(x=>x.id===S.pe);
+  $('#pm').onchange=ev=>{S.month=ev.target.value||S.month;render()};
+  $('#pa').onclick=()=>{const h=iso(new Date());diaForm(h.startsWith(S.month)?h:S.month+'-01',e,true)};
+  document.querySelectorAll('.it[data-px]').forEach(l=>l.onclick=()=>{const x=S.dias.find(y=>y.id===l.dataset.px);
+    sheet(esc(e.nome)+' · '+fmt(x.data),[['Alterar horários',()=>diaForm(x.data,e,true)],['Remover este dia',async()=>{await ck(db.from('escalas_dia').delete().eq('id',x.id));load()},'red']])});
+};
 
 // ---------- Equipe ----------
 function vFunc(){
@@ -235,7 +295,7 @@ function vFunc(){
 }
 bind.func=()=>document.querySelectorAll('.it[data-e]').forEach(l=>l.onclick=()=>{
   const e=S.emps.find(x=>x.id===l.dataset.e);
-  sheet(esc(e.nome),[['Editar dados e escala',()=>empForm(e)],[e.ativo?'Desativar (mantém histórico)':'Reativar',async()=>{await ck(db.from('funcionarios').update({ativo:!e.ativo}).eq('id',e.id));load()}],['Excluir tudo dele',async()=>{if(!confirm(`Excluir ${e.nome} e TODO o histórico? Não dá para desfazer.`))return;try{await ck(db.from('funcionarios').delete().eq('id',e.id))}catch(x){alert(x.message)}load()},'red']]);
+  sheet(esc(e.nome),[...(e.tipo==='flexivel'?[['Folha de ponto (registrar horários)',()=>{S.pe=e.id;S.tab='ponto';render()}]]:[]),['Editar dados e escala',()=>empForm(e)],[e.ativo?'Desativar (mantém histórico)':'Reativar',async()=>{await ck(db.from('funcionarios').update({ativo:!e.ativo}).eq('id',e.id));load()}],['Excluir tudo dele',async()=>{if(!confirm(`Excluir ${e.nome} e TODO o histórico? Não dá para desfazer.`))return;try{await ck(db.from('funcionarios').delete().eq('id',e.id))}catch(x){alert(x.message)}load()},'red']]);
 });
 function empForm(e){
   const sc=e?S.esc.filter(x=>x.funcionario_id===e.id):[];
@@ -323,7 +383,8 @@ function resumoMes(){
     faltas:fm.filter(f => f.funcionario_id===e.id && !f.atestado).length,
     atestados:fm.filter(f => f.funcionario_id===e.id && f.atestado).length,
     coberturas:fm.filter(f => f.cobertura_id===e.id).length,
-    pend:S.faltas.filter(f => f.funcionario_id===e.id && !f.horas_quitadas).reduce((s,f) => s + +f.horas_devidas, 0)
+    pend:S.faltas.filter(f => f.funcionario_id===e.id && !f.horas_quitadas).reduce((s,f) => s + +f.horas_devidas, 0),
+    flex:e.tipo==='flexivel', horas:S.dias.filter(d => d.funcionario_id===e.id && d.data.startsWith(S.month)).reduce((s,d) => s + horas(d.entrada,d.saida), 0)
   }));
 }
 function vResumo(){
@@ -331,7 +392,7 @@ function vResumo(){
   const tot = k => r.reduce((s,x) => s + x[k], 0);
   return `<div class="card"><input type="month" id="mm" value="${S.month}"><div class="row"><button class="ghost grow" id="cp">Copiar texto</button><button class="ghost grow" id="csv">CSV</button><button class="ghost grow" id="pr">Imprimir</button></div>
   <div class="stats"><div class="stat"><b>${tot('faltas')}</b>faltas sem atestado</div><div class="stat"><b>${tot('atestados')}</b>atestados</div><div class="stat"><b>${tot('coberturas')}</b>coberturas</div><div class="stat"><b>${tot('pend')}h</b>horas pendentes (total)</div></div></div>
-  <div class="card">${r.map(x=>`<div class="it" style="cursor:default"><div class="av">${esc((x.nome[0]||'?').toUpperCase())}</div><div class="grow"><b>${esc(x.nome)}</b><br><small>${x.faltas} faltas · ${x.atestados} atestados · ${x.coberturas} coberturas</small></div>${x.pend>0?`<span class="tag warn">${x.pend}h</span>`:''}</div>`).join('')}</div>`;
+  <div class="card">${r.map(x=>`<div class="it" style="cursor:default"><div class="av">${esc((x.nome[0]||'?').toUpperCase())}</div><div class="grow"><b>${esc(x.nome)}</b><br><small>${x.faltas} faltas · ${x.atestados} atestados · ${x.coberturas} coberturas${x.flex?' · '+fh(x.horas)+' trabalhadas':''}</small></div>${x.pend>0?`<span class="tag warn">${x.pend}h</span>`:''}</div>`).join('')}</div>`;
 }
 function textoResumo(){
   const fm = S.faltas.filter(f => f.data.startsWith(S.month)).sort((a,b) => a.data.localeCompare(b.data));
