@@ -5,44 +5,44 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Escala da Equipe</title>
 <link rel="manifest" href="manifest.json">
-<meta name="theme-color" content="#5a189a">
+<meta name="theme-color" content="#f6f7f9">
 <link rel="icon" href="icon-192.png">
 <link rel="apple-touch-icon" href="icon-192.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Escala">
 <style>
-:root{--bg:#f4f1f8;--card:#fff;--ink:#1d1630;--mut:#6f6783;--line:#e8e2f0;--pri:#7b2cbf;--pri2:#5a189a;--ok:#14935f;--bad:#d1393b;--warn:#c27a00;--hol:#fff1c9}
-@media(prefers-color-scheme:dark){:root{--bg:#130e1c;--card:#1e1630;--ink:#f1ecfa;--mut:#a99fc0;--line:#322846;--pri:#b57af0;--pri2:#4a1485;--ok:#47c48b;--bad:#ee7a70;--warn:#e0b050;--hol:#3a3216}}
+:root{--bg:#f6f7f9;--card:#fff;--ink:#1f2933;--mut:#6b7785;--line:#e6e9ee;--pri:#2f6f8f;--onpri:#fff;--ok:#2f855a;--bad:#c0392b;--warn:#b7791f;--hol:#fdf3d7}
+@media(prefers-color-scheme:dark){:root{--bg:#12171c;--card:#1b2229;--ink:#e8edf2;--mut:#93a0ad;--line:#2a333c;--pri:#7fb6d3;--onpri:#0f1b24;--ok:#5cc08f;--bad:#ee8378;--warn:#e0b050;--hol:#3a3216}}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.4 system-ui,-apple-system,Segoe UI,Roboto,sans-serif;padding-bottom:96px}
-.hd{background:var(--pri2);color:#fff;padding:calc(18px + env(safe-area-inset-top)) 20px 34px;border-radius:0 0 26px 26px}
-.hd small{color:#ffffffb8;text-transform:capitalize}.hd h1{font-size:24px;margin:2px 0 0}
-.bk{background:none;padding:0 0 8px;font-size:15px;color:#fff;border:0}
-main{padding:0 14px;max-width:560px;margin:-18px auto 0}
-.card{background:var(--card);border-radius:20px;padding:16px;margin-bottom:14px;box-shadow:0 2px 10px #2a104a14}
+.hd{padding:calc(18px + env(safe-area-inset-top)) 18px 12px}
+.hd small{color:var(--mut);text-transform:capitalize}.hd h1{font-size:26px;margin:2px 0 0;font-weight:700}
+.bk{background:none;padding:0 0 8px;min-height:0;font-size:15px;color:var(--pri);border:0}
+main{padding:0 14px;max-width:560px;margin:0 auto}
+.card{background:var(--card);border-radius:20px;padding:16px;margin-bottom:14px;box-shadow:0 1px 3px #1f293314}
 .card>b:first-child,.card h3{display:block;margin-bottom:6px}
 .row{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:6px 0}.row.end{justify-content:flex-end}.grow{flex:1}
-button{background:var(--pri);color:#fff;border:0;border-radius:14px;padding:12px 16px;min-height:46px;font:inherit;font-weight:600;cursor:pointer}
+button{background:var(--pri);color:var(--onpri);border:0;border-radius:14px;padding:12px 16px;min-height:46px;font:inherit;font-weight:600;cursor:pointer}
 button.ghost{background:none;color:var(--pri);border:1px solid var(--line)}button.red{background:var(--bad)}button.sm{padding:6px 12px;min-height:38px;font-size:14px}
 button.ghost.red{background:none;color:var(--bad)}
 input,select,textarea{font:inherit;font-size:16px;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:12px;width:100%}
 input[type=checkbox]{width:20px;height:20px;vertical-align:middle;margin-right:6px}
 label{display:block;margin:10px 0;color:var(--mut);font-size:14px}label input,label select,label textarea{margin-top:4px}
 .tag{display:inline-block;border-radius:20px;padding:3px 10px;font-size:12px;font-weight:700;white-space:nowrap}
-.tag.bad{background:var(--bad);color:#fff}.tag.ok{background:var(--ok);color:#fff}.tag.warn{background:var(--warn);color:#fff}.tag.gr{background:var(--line);color:var(--mut)}
+.tag.bad{background:color-mix(in srgb,var(--bad) 14%,transparent);color:var(--bad)}.tag.ok{background:color-mix(in srgb,var(--ok) 14%,transparent);color:var(--ok)}.tag.warn{background:color-mix(in srgb,var(--warn) 16%,transparent);color:var(--warn)}.tag.gr{background:var(--line);color:var(--mut)}
 small,.mut{color:var(--mut)}.w{width:38px}
 .it{display:flex;gap:12px;align-items:center;padding:12px 0;border-top:1px solid var(--line);cursor:pointer}.it:first-of-type{border-top:0}
 .av{width:44px;height:44px;border-radius:50%;background:color-mix(in srgb,var(--pri) 18%,transparent);color:var(--pri);display:grid;place-items:center;font-weight:800;flex:none}
 .qa{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
-.qa button{background:var(--card);color:var(--ink);border-radius:20px;padding:16px 8px;display:flex;flex-direction:column;gap:6px;align-items:center;box-shadow:0 2px 10px #2a104a14}.qa i{font-style:normal;font-size:28px}
+.qa button{background:var(--card);color:var(--ink);border-radius:20px;padding:16px 8px;display:flex;flex-direction:column;gap:6px;align-items:center;box-shadow:0 1px 3px #1f293314}.qa svg{width:26px;height:26px;color:var(--pri)}
 .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px}.stat{background:var(--card);border-radius:18px;padding:12px;text-align:center;font-size:12px;color:var(--mut)}.stat b{display:block;font-size:24px;color:var(--ink)}
-.days{display:flex;gap:6px;margin:10px 0 14px}.dc{flex:1;min-width:0;padding:8px 0;border-radius:16px;background:var(--card);color:var(--ink);display:flex;flex-direction:column;align-items:center;font-size:12px;font-weight:500;min-height:64px;gap:0}.dc b{font-size:17px}.dc.on{background:var(--pri);color:#fff}.dc span{font-size:10px;color:var(--warn)}.dc.on span{color:#fff}
+.days{display:flex;gap:6px;margin:10px 0 14px}.dc{flex:1;min-width:0;padding:8px 0;border-radius:16px;background:var(--card);color:var(--ink);display:flex;flex-direction:column;align-items:center;font-size:12px;font-weight:500;min-height:64px;gap:0}.dc b{font-size:17px}.dc.on{background:var(--pri);color:var(--onpri)}.dc span{width:5px;height:5px;border-radius:50%;background:var(--warn);margin-top:3px}.dc.on span{background:var(--onpri)}
 .ban{background:var(--hol);border-radius:12px;padding:8px 12px;margin-bottom:8px;font-weight:600}
 .bn{position:fixed;bottom:0;left:0;right:0;background:var(--card);border-top:1px solid var(--line);display:flex;padding:8px 4px calc(8px + env(safe-area-inset-bottom));z-index:9}
 .bn button{background:none;color:var(--mut);flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;font-size:12px;padding:0;min-height:0;font-weight:500}
 .bn i{font-style:normal;font-size:20px;width:56px;height:32px;border-radius:16px;display:grid;place-items:center}
 .bn .on{color:var(--pri);font-weight:700}.bn .on i{background:color-mix(in srgb,var(--pri) 18%,transparent)}
-.fab{position:fixed;right:18px;bottom:calc(88px + env(safe-area-inset-bottom));width:58px;height:58px;border-radius:50%;font-size:30px;padding:0;box-shadow:0 6px 16px #5a189a66;z-index:8}
+.fab{position:fixed;right:18px;bottom:calc(88px + env(safe-area-inset-bottom));width:58px;height:58px;border-radius:50%;font-size:30px;padding:0;box-shadow:0 4px 12px #0003;z-index:8}
 dialog{border:0;border-radius:24px 24px 0 0;background:var(--card);color:var(--ink);width:100%;max-width:560px;margin:auto auto 0;padding:18px 18px calc(18px + env(safe-area-inset-bottom));max-height:92vh;overflow:auto}
 dialog::backdrop{background:#0009}
 @media print{.hd,.bn,.fab,button{display:none}body{background:#fff;color:#000}}
@@ -66,7 +66,7 @@ const monday = d => { const x = new Date(d); x.setDate(x.getDate() - (x.getDay()
 const ck = async q => { const r = await q; if (r.error) throw r.error; return r; };
 const hhmm = t => (t||'').slice(0,5);
 
-let S = { tab:'escala', emps:[], esc:[], faltas:[], extras:[], day:iso(new Date()), month:iso(new Date()).slice(0,7), year:new Date().getFullYear(), verInativos:false };
+let S = { tab:'inicio', dias:[], emps:[], esc:[], faltas:[], extras:[], day:iso(new Date()), month:iso(new Date()).slice(0,7), year:new Date().getFullYear(), verInativos:false };
 
 // ---------- Feriados nacionais (calculados para qualquer ano) ----------
 function pascoa(y){const a=y%19,b=Math.floor(y/100),c=y%100,d=Math.floor(b/4),e=b%4,f=Math.floor((b+8)/25),g=Math.floor((b-f+1)/3),h=(19*a+b-d-g+15)%30,i=Math.floor(c/4),k=c%4,l=(32+2*e+2*i-h-k)%7,m=Math.floor((a+11*h+22*l)/451),mes=Math.floor((h+l-7*m+114)/31),dia=((h+l-7*m+114)%31)+1;return new Date(y,mes-1,dia);}
@@ -86,13 +86,14 @@ function feriados(...anos){
 // ---------- Dados ----------
 async function load(){
   try{
-    const [a,b,c,d] = await Promise.all([
+    const [a,b,c,d,x] = await Promise.all([
       ck(db.from('funcionarios').select('*').order('nome')),
       ck(db.from('escalas').select('*')),
       ck(db.from('faltas').select('*').order('data',{ascending:false})),
-      ck(db.from('feriados_extras').select('*').order('data'))
+      ck(db.from('feriados_extras').select('*').order('data')),
+      ck(db.from('escalas_dia').select('*'))
     ]);
-    S.emps=a.data; S.esc=b.data; S.faltas=c.data; S.extras=d.data;
+    S.emps=a.data; S.esc=b.data; S.faltas=c.data; S.extras=d.data; S.dias=x.data;
   }catch(e){ alert('Erro ao carregar: '+e.message); }
   render();
 }
@@ -123,7 +124,9 @@ async function start(){
 }
 
 // ---------- Estrutura ----------
-const NAV=[['inicio','Início','🏠'],['escala','Escala','📅'],['faltas','Faltas','📝'],['func','Equipe','👥'],['mais','Mais','☰']];
+const IC={home:'<path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/>',cal:'<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/>',clip:'<rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4v2h6V4M9 11h6M9 15h4"/>',users:'<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c0-3.6 2.9-6 6.5-6s6.5 2.4 6.5 6"/><path d="M16 4.6a3.5 3.5 0 010 6.8M18 14.4c2.2.7 3.5 2.6 3.5 5.6"/>',more:'<circle cx="5" cy="12" r="1.3" fill="currentColor"/><circle cx="12" cy="12" r="1.3" fill="currentColor"/><circle cx="19" cy="12" r="1.3" fill="currentColor"/>',edit:'<path d="M4 20h4L19 9l-4-4L4 16z"/>',uplus:'<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c0-3.6 2.9-6 6.5-6 1.4 0 2.6.3 3.6.9M18 8v6M15 11h6"/>',chart:'<path d="M4 20V10M10 20V4M16 20v-8M22 20H2"/>',star:'<path d="M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1L3.2 9.5l6.1-.9z"/>',user:'<circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7"/>',out:'<path d="M9 4H5a1 1 0 00-1 1v14a1 1 0 001 1h4M16 8l4 4-4 4M20 12H9"/>',chev:'<path d="M9 6l6 6-6 6"/>'};
+const ic=n=>`<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${IC[n]}</svg>`;
+const NAV=[['inicio','Início','home'],['escala','Escala','cal'],['faltas','Faltas','clip'],['func','Equipe','users'],['mais','Mais','more']];
 const SUB={feriados:'Feriados',resumo:'Resumo para os donos',conta:'Minha conta'};
 const bind = {};
 function render(){
@@ -132,7 +135,7 @@ function render(){
   const V={inicio:vInicio,escala:vEscala,faltas:vFaltas,func:vFunc,mais:vMais,feriados:vFeriados,resumo:vResumo,conta:vConta};
   $('#app').innerHTML=`<div class="hd">${sub?'<button class="bk" id="bk">‹ Mais</button><br>':''}<small>${new Date().toLocaleDateString('pt-BR',{weekday:'long',day:'numeric',month:'long'})}</small><h1>${sub||tit[t]}</h1></div>
   <main>${V[t]()}</main>${(t==='faltas'||t==='func')?'<button class="fab" id="fab">+</button>':''}
-  <nav class="bn">${NAV.map(([k,n,i])=>`<button class="${nav===k?'on':''}" data-t="${k}"><i>${i}</i>${n}</button>`).join('')}</nav>`;
+  <nav class="bn">${NAV.map(([k,n,i])=>`<button class="${nav===k?'on':''}" data-t="${k}"><i>${ic(i)}</i>${n}</button>`).join('')}</nav>`;
   document.querySelectorAll('.bn button').forEach(b=>b.onclick=()=>{S.tab=b.dataset.t;render();scrollTo(0,0)});
   if($('#bk'))$('#bk').onclick=()=>{S.tab='mais';render()};
   if($('#fab'))$('#fab').onclick=()=>t==='faltas'?faltaForm(null):empForm(null);
@@ -145,13 +148,22 @@ function sheet(title,btns){
   d.querySelectorAll('button').forEach(b=>b.onclick=async()=>{d.close();if(b.dataset.i!=='x')await btns[b.dataset.i][1]()});
 }
 function situ(e,k){
-  const d=parse(k),f=S.faltas.find(x=>x.funcionario_id===e.id&&x.data===k),sc=S.esc.find(x=>x.funcionario_id===e.id&&x.dia_semana===d.getDay()),cb=S.faltas.filter(x=>x.cobertura_id===e.id&&x.data===k);
-  let sub=!sc?'Sem escala':sc.folga?'Folga':`${hhmm(sc.entrada)} às ${hhmm(sc.saida)}`,tag='';
-  if(f){tag=`<span class="tag bad">${f.atestado?'Atestado':'Faltou'}</span>`;sub=f.cobertura_id?`Coberto por ${esc(nome(f.cobertura_id))}`:'Sem cobertura';}
+  const d=parse(k),f=S.faltas.find(x=>x.funcionario_id===e.id&&x.data===k),ov=S.dias.find(x=>x.funcionario_id===e.id&&x.data===k),sc=S.esc.find(x=>x.funcionario_id===e.id&&x.dia_semana===d.getDay()),cb=S.faltas.filter(x=>x.cobertura_id===e.id&&x.data===k);
+  let sub,tag='',work=false;
+  if(ov){sub=`${hhmm(ov.entrada)} às ${hhmm(ov.saida)}`;work=true}
+  else if(e.tipo==='flexivel')sub='Não escalada neste dia';
+  else if(!sc)sub='Sem escala';
+  else if(sc.folga){sub='Folga';tag='<span class="tag gr">Folga</span>'}
+  else{sub=`${hhmm(sc.entrada)} às ${hhmm(sc.saida)}`;work=true}
+  if(f){tag=`<span class="tag bad">${f.atestado?'Atestado':'Faltou'}</span>`;sub=f.cobertura_id?`Coberto por ${esc(nome(f.cobertura_id))}`:'Sem cobertura';work=false}
   else if(cb.length)tag=`<span class="tag ok">Cobre ${esc(nome(cb[0].funcionario_id))}</span>`;
-  else if(sc&&sc.folga)tag='<span class="tag gr">Folga</span>';
-  return {sub,tag,work:!f&&!!sc&&!sc.folga};
+  return {sub,tag,work};
 }
+const rel=(e,k)=>{
+  if(S.dias.some(x=>x.funcionario_id===e.id&&x.data===k)||S.faltas.some(f=>f.funcionario_id===e.id&&f.data===k))return true;
+  if(e.tipo==='flexivel')return false;
+  const sc=S.esc.find(x=>x.funcionario_id===e.id&&x.dia_semana===parse(k).getDay());return !!sc&&!sc.folga;
+};
 const item=(e,k)=>{const s=situ(e,k);return `<div class="it" data-e="${e.id}"><div class="av">${esc((e.nome[0]||'?').toUpperCase())}</div><div class="grow"><b>${esc(e.nome)}</b><br><small>${s.sub}</small></div>${s.tag}</div>`};
 
 // ---------- Início ----------
@@ -160,9 +172,9 @@ function vInicio(){
   const trab=at.filter(e=>situ(e,k).work).length,fal=S.faltas.filter(f=>f.data===k).length;
   const pend=S.faltas.filter(f=>!f.horas_quitadas).reduce((s,f)=>s+ +f.horas_devidas,0);
   const prox=Object.entries(H).filter(([d])=>d>k).sort()[0];
-  return `<div class="qa"><button data-q="falta"><i>📝</i>Registrar falta</button><button data-q="emp"><i>👤</i>Novo funcionário</button><button data-q="escala"><i>📅</i>Ver escala</button><button data-q="resumo"><i>📊</i>Resumo do mês</button></div>
+  return `<div class="qa"><button data-q="falta">${ic('edit')}Registrar falta</button><button data-q="emp">${ic('uplus')}Novo funcionário</button><button data-q="escala">${ic('cal')}Ver escala</button><button data-q="resumo">${ic('chart')}Resumo do mês</button></div>
   <div class="stats"><div class="stat"><b>${trab}</b>trabalham hoje</div><div class="stat"><b>${fal}</b>faltas hoje</div><div class="stat"><b>${pend}h</b>horas devidas</div></div>
-  <div class="card"><b>Hoje</b>${H[k]?`<div class="ban">★ ${esc(H[k])}</div>`:''}${at.map(e=>item(e,k)).join('')||'<p class="mut">Cadastre sua equipe tocando em "Novo funcionário".</p>'}</div>
+  <div class="card"><b>Hoje</b>${H[k]?`<div class="ban">Feriado · ${esc(H[k])}</div>`:''}${at.filter(e=>rel(e,k)).map(e=>item(e,k)).join('')||'<p class="mut">Ninguém escalado hoje.</p>'}</div>
   ${prox?`<div class="card"><b>Próximo feriado</b>${esc(prox[1])} · ${fmt(prox[0])}</div>`:''}`;
 }
 bind.inicio=()=>{
@@ -172,8 +184,8 @@ bind.inicio=()=>{
 
 // ---------- Mais ----------
 function vMais(){
-  return `<div class="card">${[['feriados','🎉','Feriados','Nacionais e extras'],['resumo','📊','Resumo para os donos','Mês, texto, CSV e impressão'],['conta','👤','Minha conta','Perfil, senha e instalar app']].map(([k,i,t,d])=>`<div class="it" data-go="${k}"><div class="av">${i}</div><div class="grow"><b>${t}</b><br><small>${d}</small></div>›</div>`).join('')}
-  <div class="it" id="so"><div class="av">🚪</div><div class="grow"><b>Sair</b></div></div></div>`;
+  return `<div class="card">${[['feriados','star','Feriados','Nacionais e extras'],['resumo','chart','Resumo para os donos','Mês, texto, CSV e impressão'],['conta','user','Minha conta','Perfil, senha e instalar app']].map(([k,i,t,d])=>`<div class="it" data-go="${k}"><div class="av">${ic(i)}</div><div class="grow"><b>${t}</b><br><small>${d}</small></div>${ic('chev')}</div>`).join('')}
+  <div class="it" id="so"><div class="av">${ic('out')}</div><div class="grow"><b>Sair</b></div></div></div>`;
 }
 bind.mais=()=>{
   document.querySelectorAll('[data-go]').forEach(b=>b.onclick=()=>{S.tab=b.dataset.go;render();scrollTo(0,0)});
@@ -182,42 +194,69 @@ bind.mais=()=>{
 
 // ---------- Escala (dia a dia) ----------
 function vEscala(){
-  const wk=monday(parse(S.day)),dias=[...Array(7)].map((_,i)=>new Date(wk.getFullYear(),wk.getMonth(),wk.getDate()+i)),H=feriados(dias[0].getFullYear(),dias[6].getFullYear()),k=S.day,at=S.emps.filter(e=>e.ativo);
+  const wk=monday(parse(S.day)),dias=[...Array(7)].map((_,i)=>new Date(wk.getFullYear(),wk.getMonth(),wk.getDate()+i)),H=feriados(dias[0].getFullYear(),dias[6].getFullYear()),k=S.day,at=S.emps.filter(e=>e.ativo),flex=at.filter(e=>e.tipo==='flexivel');
+  const lista=at.filter(e=>rel(e,k)),folga=at.filter(e=>e.tipo!=='flexivel'&&!rel(e,k));
+  const semana=flex.map(e=>{const dd=dias.filter(d=>S.dias.some(x=>x.funcionario_id===e.id&&x.data===iso(d))),ok=dd.length>=e.dias_semana;
+    return `<div class="it" data-e="${e.id}"><div class="av">${esc((e.nome[0]||'?').toUpperCase())}</div><div class="grow"><b>${esc(e.nome)}</b><br><small>${dd.length} de ${e.dias_semana} dias · ${dd.map(d=>DIAS[d.getDay()]).join(', ')||'nenhum dia escalado'}</small></div><span class="tag ${ok?'ok':'warn'}">${ok?'Completo':'Faltam '+(e.dias_semana-dd.length)}</span></div>`}).join('');
   return `<div class="card" style="padding:10px"><div class="row" style="margin:0"><button class="ghost sm" id="pv">‹</button><b class="grow" style="text-align:center;margin:0">${dias[0].toLocaleDateString('pt-BR',{day:'numeric',month:'short'})} a ${dias[6].toLocaleDateString('pt-BR',{day:'numeric',month:'short'})}</b><button class="ghost sm" id="nx">›</button></div></div>
-  <div class="days">${dias.map(d=>{const q=iso(d);return `<button class="dc ${q===k?'on':''}" data-d="${q}">${DIAS[d.getDay()]}<b>${d.getDate()}</b><span>${H[q]?'★':'&nbsp;'}</span></button>`}).join('')}</div>
-  <div class="card"><b>${parse(k).toLocaleDateString('pt-BR',{weekday:'long',day:'numeric',month:'long'})}</b>${H[k]?`<div class="ban">★ ${esc(H[k])}</div>`:''}${at.map(e=>item(e,k)).join('')||'<p class="mut">Cadastre a equipe na aba Equipe.</p>'}<p class="mut"><small>Toque em um funcionário para editar a escala dele.</small></p></div>`;
+  <div class="days">${dias.map(d=>{const q=iso(d);return `<button class="dc ${q===k?'on':''}" data-d="${q}">${DIAS[d.getDay()]}<b>${d.getDate()}</b><span style="${H[q]?'':'visibility:hidden'}"></span></button>`}).join('')}</div>
+  <div class="card"><b>${parse(k).toLocaleDateString('pt-BR',{weekday:'long',day:'numeric',month:'long'})}</b>${H[k]?`<div class="ban">Feriado · ${esc(H[k])}</div>`:''}${lista.map(e=>item(e,k)).join('')||'<p class="mut">Ninguém escalado neste dia.</p>'}${folga.length?`<p class="mut"><small>De folga: ${folga.map(e=>esc(e.nome)).join(', ')}</small></p>`:''}<button class="ghost" id="esd" style="width:100%;margin-top:6px">Escalar neste dia</button></div>
+  ${semana?`<div class="card"><b>Semana · funcionários flexíveis</b>${semana}</div>`:''}`;
 }
 bind.escala=()=>{
-  const mv=n=>{const d=parse(S.day);d.setDate(d.getDate()+n);S.day=iso(d);render()};
-  $('#pv').onclick=()=>mv(-7);$('#nx').onclick=()=>mv(7);
+  const k=S.day,mv=n=>{const d=parse(S.day);d.setDate(d.getDate()+n);S.day=iso(d);render()};
+  $('#pv').onclick=()=>mv(-7);$('#nx').onclick=()=>mv(7);$('#esd').onclick=()=>diaForm(k,null);
   document.querySelectorAll('.dc').forEach(b=>b.onclick=()=>{S.day=b.dataset.d;render()});
-  document.querySelectorAll('.it[data-e]').forEach(l=>l.onclick=()=>empForm(S.emps.find(e=>e.id===l.dataset.e)));
+  document.querySelectorAll('.it[data-e]').forEach(l=>l.onclick=()=>{
+    const e=S.emps.find(x=>x.id===l.dataset.e),ov=S.dias.find(x=>x.funcionario_id===e.id&&x.data===k),b=[[ov?'Alterar horário deste dia':'Escalar neste dia',()=>diaForm(k,e)]];
+    if(ov)b.push(['Remover escala deste dia',async()=>{await ck(db.from('escalas_dia').delete().eq('id',ov.id));load()},'red']);
+    b.push(['Editar cadastro e escala fixa',()=>empForm(e)]);
+    sheet(esc(e.nome)+' · '+fmt(k),b);
+  });
 };
+function diaForm(k,e0){
+  const l=S.emps.filter(e=>e.ativo).map(e=>[e.id,e.nome]);if(!l.length)return alert('Cadastre funcionários primeiro.');
+  const ov=e0&&S.dias.find(x=>x.funcionario_id===e0.id&&x.data===k);
+  modal('Escalar em '+fmt(k),`<label>Funcionário<select name="fu">${opts(l,e0&&e0.id)}</select></label><div class="row"><label class="grow">Entrada<input type="time" name="en" value="${hhmm(ov&&ov.entrada)||'07:00'}"></label><label class="grow">Saída<input type="time" name="sa" value="${hhmm(ov&&ov.saida)||'12:00'}"></label></div><p class="mut"><small>Para funcionário flexível, a saída é calculada pelas horas por dia (você pode ajustar).</small></p>`,async d=>{
+    const g=n=>d.querySelector(`[name="${n}"]`);
+    if(!g('en').value||!g('sa').value)throw Error('Informe entrada e saída.');
+    if(g('sa').value<=g('en').value)throw Error('A saída precisa ser depois da entrada.');
+    await ck(db.from('escalas_dia').upsert({funcionario_id:g('fu').value,data:k,entrada:g('en').value,saida:g('sa').value},{onConflict:'funcionario_id,data'}));
+  });
+  const d=[...document.querySelectorAll('dialog')].pop(),g=n=>d.querySelector(`[name="${n}"]`);
+  const auto=()=>{const e=S.emps.find(x=>x.id===g('fu').value);if(e&&e.tipo==='flexivel'&&g('en').value){const [h,m]=g('en').value.split(':').map(Number),t=h*60+m+Math.round(e.horas_dia*60);g('sa').value=p2(Math.floor(t/60)%24)+':'+p2(t%60)}};
+  g('en').oninput=auto;g('fu').onchange=auto;if(!ov)auto();
+}
 
 // ---------- Equipe ----------
 function vFunc(){
   const l=[...S.emps].sort((a,b)=>b.ativo-a.ativo);
-  return `<div class="card"><b>${S.emps.filter(e=>e.ativo).length} funcionários ativos</b>${l.map(e=>`<div class="it" data-e="${e.id}"><div class="av">${esc((e.nome[0]||'?').toUpperCase())}</div><div class="grow"><b>${esc(e.nome)}</b><br><small>${esc(e.cargo||'Sem cargo')}${e.telefone?' · '+esc(e.telefone):''}</small></div>${e.ativo?'':'<span class="tag gr">inativo</span>'}</div>`).join('')||'<p class="mut">Toque no + para adicionar o primeiro funcionário.</p>'}</div>`;
+  return `<div class="card"><b>${S.emps.filter(e=>e.ativo).length} funcionários ativos</b>${l.map(e=>`<div class="it" data-e="${e.id}"><div class="av">${esc((e.nome[0]||'?').toUpperCase())}</div><div class="grow"><b>${esc(e.nome)}</b><br><small>${e.tipo==='flexivel'?`Flexível · ${e.dias_semana} dias por semana · ${e.horas_dia}h`:esc(e.cargo||'Sem cargo')}${e.telefone?' · '+esc(e.telefone):''}</small></div>${e.ativo?'':'<span class="tag gr">inativo</span>'}</div>`).join('')||'<p class="mut">Toque no + para adicionar o primeiro funcionário.</p>'}</div>`;
 }
 bind.func=()=>document.querySelectorAll('.it[data-e]').forEach(l=>l.onclick=()=>{
   const e=S.emps.find(x=>x.id===l.dataset.e);
-  sheet(esc(e.nome),[['✏️ Editar dados e escala',()=>empForm(e)],[e.ativo?'⏸ Desativar (mantém histórico)':'▶️ Reativar',async()=>{await ck(db.from('funcionarios').update({ativo:!e.ativo}).eq('id',e.id));load()}],['🗑 Excluir tudo dele',async()=>{if(!confirm(`Excluir ${e.nome} e TODO o histórico? Não dá para desfazer.`))return;try{await ck(db.from('funcionarios').delete().eq('id',e.id))}catch(x){alert(x.message)}load()},'red']]);
+  sheet(esc(e.nome),[['Editar dados e escala',()=>empForm(e)],[e.ativo?'Desativar (mantém histórico)':'Reativar',async()=>{await ck(db.from('funcionarios').update({ativo:!e.ativo}).eq('id',e.id));load()}],['Excluir tudo dele',async()=>{if(!confirm(`Excluir ${e.nome} e TODO o histórico? Não dá para desfazer.`))return;try{await ck(db.from('funcionarios').delete().eq('id',e.id))}catch(x){alert(x.message)}load()},'red']]);
 });
 function empForm(e){
-  const sc = e ? S.esc.filter(x => x.funcionario_id===e.id) : [];
-  const rows = [1,2,3,4,5,6,0].map(i => { const r = sc.find(x => x.dia_semana===i) || {folga:i===0};
-    return `<div class="row"><b class="w">${DIAS[i]}</b><label style="margin:0"><input type="checkbox" name="f${i}" ${r.folga?'checked':''}> Folga</label><input type="time" name="e${i}" value="${hhmm(r.entrada)||'08:00'}" style="width:110px"><input type="time" name="s${i}" value="${hhmm(r.saida)||'17:00'}" style="width:110px"></div>`; }).join('');
-  modal(e ? 'Editar funcionário' : 'Novo funcionário',
-    `<label>Nome<input name="nome" value="${esc(e?.nome)}"></label><label>Cargo<input name="cargo" value="${esc(e?.cargo)}"></label><label>Telefone<input name="tel" value="${esc(e?.telefone)}"></label><h4>Escala semanal</h4>${rows}`,
-    async d => {
-      const g = n => d.querySelector(`[name="${n}"]`);
-      if (!g('nome').value.trim()) throw Error('Informe o nome.');
-      const p = { nome:g('nome').value.trim(), cargo:g('cargo').value.trim()||null, telefone:g('tel').value.trim()||null };
-      let id = e?.id;
-      if (id) await ck(db.from('funcionarios').update(p).eq('id',id)); else id = (await ck(db.from('funcionarios').insert(p).select().single())).data.id;
-      const l = [0,1,2,3,4,5,6].map(i => ({ funcionario_id:id, dia_semana:i, folga:g('f'+i).checked, entrada:g('e'+i).value||null, saida:g('s'+i).value||null }));
-      await ck(db.from('escalas').upsert(l, { onConflict:'funcionario_id,dia_semana' }));
+  const sc=e?S.esc.filter(x=>x.funcionario_id===e.id):[];
+  const rows=[1,2,3,4,5,6,0].map(i=>{const r=sc.find(x=>x.dia_semana===i)||{folga:i===0||i===6};
+    return `<div class="row"><b class="w">${DIAS[i]}</b><label style="margin:0"><input type="checkbox" name="f${i}" ${r.folga?'checked':''}>Folga</label><input type="time" name="e${i}" value="${hhmm(r.entrada)||'08:00'}" style="width:110px"><input type="time" name="s${i}" value="${hhmm(r.saida)||'17:00'}" style="width:110px"></div>`}).join('');
+  const fx=e&&e.tipo==='flexivel';
+  modal(e?'Editar funcionário':'Novo funcionário',
+    `<label>Nome<input name="nome" value="${esc(e&&e.nome)}"></label><label>Cargo<input name="cargo" value="${esc(e&&e.cargo)}"></label><label>Telefone<input name="tel" value="${esc(e&&e.telefone)}"></label>
+    <label>Tipo de escala<select name="tp"><option value="fixo" ${fx?'':'selected'}>Fixa: dias e horários da semana</option><option value="flexivel" ${fx?'selected':''}>Flexível: X dias por semana, horário livre</option></select></label>
+    <div id="bx">${rows}<p class="mut"><small>Sábado: deixe como folga se a escala muda a cada semana, e escale cada sábado na aba Escala (botão "Escalar neste dia").</small></p></div>
+    <div id="bf" style="display:none"><div class="row"><label class="grow">Dias por semana<input type="number" min="1" max="7" name="ds" value="${e?e.dias_semana:3}"></label><label class="grow">Horas por dia<input type="number" step="0.25" min="1" name="hd" value="${e?e.horas_dia:5}"></label></div><p class="mut"><small>Você escolhe o dia e a hora de entrada de cada semana na aba Escala.</small></p></div>`,
+    async d=>{
+      const g=n=>d.querySelector(`[name="${n}"]`),flex=g('tp').value==='flexivel';
+      if(!g('nome').value.trim())throw Error('Informe o nome.');
+      const p={nome:g('nome').value.trim(),cargo:g('cargo').value.trim()||null,telefone:g('tel').value.trim()||null,tipo:g('tp').value,dias_semana:+g('ds').value||3,horas_dia:+g('hd').value||5};
+      let id=e&&e.id;
+      if(id)await ck(db.from('funcionarios').update(p).eq('id',id));else id=(await ck(db.from('funcionarios').insert(p).select().single())).data.id;
+      if(!flex){const l=[0,1,2,3,4,5,6].map(i=>({funcionario_id:id,dia_semana:i,folga:g('f'+i).checked,entrada:g('e'+i).value||null,saida:g('s'+i).value||null}));await ck(db.from('escalas').upsert(l,{onConflict:'funcionario_id,dia_semana'}))}
     });
+  const d=[...document.querySelectorAll('dialog')].pop(),tg=()=>{const f=d.querySelector('[name="tp"]').value==='flexivel';d.querySelector('#bx').style.display=f?'none':'';d.querySelector('#bf').style.display=f?'':'none'};
+  d.querySelector('[name="tp"]').onchange=tg;tg();
 }
 
 // ---------- Faltas ----------
@@ -232,9 +271,9 @@ function vFaltas(){
 bind.faltas=()=>{
   $('#mm').onchange=e=>{S.month=e.target.value||S.month;render()};
   document.querySelectorAll('[data-f]').forEach(c=>c.onclick=()=>{
-    const f=S.faltas.find(x=>x.id===c.dataset.f),b=[['✏️ Editar',()=>faltaForm(f)]];
-    if(+f.horas_devidas>0)b.push([f.horas_quitadas?'↩️ Reabrir horas':'✅ Marcar horas como quitadas',async()=>{await ck(db.from('faltas').update({horas_quitadas:!f.horas_quitadas}).eq('id',f.id));load()}]);
-    b.push(['🗑 Apagar registro',async()=>{if(!confirm('Apagar este registro?'))return;await ck(db.from('faltas').delete().eq('id',f.id));load()},'red']);
+    const f=S.faltas.find(x=>x.id===c.dataset.f),b=[['Editar',()=>faltaForm(f)]];
+    if(+f.horas_devidas>0)b.push([f.horas_quitadas?'Reabrir horas':'Marcar horas como quitadas',async()=>{await ck(db.from('faltas').update({horas_quitadas:!f.horas_quitadas}).eq('id',f.id));load()}]);
+    b.push(['Apagar registro',async()=>{if(!confirm('Apagar este registro?'))return;await ck(db.from('faltas').delete().eq('id',f.id));load()},'red']);
     sheet(esc(nome(f.funcionario_id))+' · '+fmt(f.data),b);
   });
 };
