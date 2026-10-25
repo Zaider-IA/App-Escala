@@ -5,47 +5,47 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Escala da Equipe</title>
 <link rel="manifest" href="manifest.json">
-<meta name="theme-color" content="#1f5f8b">
+<meta name="theme-color" content="#5a189a">
 <link rel="icon" href="icon-192.png">
 <link rel="apple-touch-icon" href="icon-192.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Escala">
 <style>
-:root{--bg:#f3f5f7;--card:#fff;--ink:#1c2733;--mut:#68788a;--line:#dde3ea;--pri:#1f5f8b;--ok:#1f8a5b;--bad:#c4392f;--warn:#b7791f;--hol:#fff4d6}
-@media(prefers-color-scheme:dark){:root{--bg:#10161d;--card:#18212b;--ink:#e6edf3;--mut:#93a4b6;--line:#2a3745;--pri:#5aa6dc;--ok:#47c48b;--bad:#ee7a70;--warn:#e0b050;--hol:#3a3216}}
-*{box-sizing:border-box}
-body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.45 system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
-header{background:var(--card);border-bottom:1px solid var(--line);padding:10px 14px;position:sticky;top:0;z-index:5}
-header .top{display:flex;justify-content:space-between;align-items:center;gap:8px}
-h1{font-size:17px;margin:0}
-nav{display:flex;gap:4px;overflow-x:auto;margin-top:8px}
-nav button{background:none;border:0;color:var(--mut);padding:8px 12px;border-radius:8px;cursor:pointer;white-space:nowrap;font:inherit}
-nav button.on{background:var(--pri);color:#fff}
-main{padding:14px;max-width:1100px;margin:auto}
-.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px;margin-bottom:14px}
-.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:6px 0}
-.row.end{justify-content:flex-end}.grow{flex:1}
-button{background:var(--pri);color:#fff;border:0;border-radius:8px;padding:8px 14px;cursor:pointer;font:inherit}
-button.ghost{background:none;color:var(--pri);border:1px solid var(--line)}
-button.red{background:var(--bad)}button.sm{padding:4px 10px;font-size:13px}
-input,select,textarea{font:inherit;color:inherit;background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:8px;width:100%}
-input[type=checkbox]{width:auto}
-label{display:block;margin:8px 0;color:var(--mut);font-size:13px}
-label input,label select,label textarea{margin-top:3px;color:var(--ink)}
-.scroll{overflow-x:auto}
-table{border-collapse:collapse;width:100%;min-width:640px}
-th,td{border-bottom:1px solid var(--line);padding:8px;text-align:left;vertical-align:top;font-size:14px}
-th{color:var(--mut);font-weight:600}
-td.hol,th.hol{background:var(--hol)}
-.tag{display:inline-block;border-radius:6px;padding:1px 7px;font-size:12px;font-weight:600}
-.tag.bad{background:var(--bad);color:#fff}.tag.ok{background:var(--ok);color:#fff}.tag.warn{background:var(--warn);color:#fff}
-small,.mut{color:var(--mut)}
-.w{width:38px}
-dialog{border:1px solid var(--line);border-radius:12px;background:var(--card);color:var(--ink);width:min(520px,94vw);padding:16px;max-height:90vh;overflow:auto}
-dialog::backdrop{background:#0008}
-.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px}
-.stat{border:1px solid var(--line);border-radius:10px;padding:10px}.stat b{font-size:22px;display:block}
-@media print{header,button,nav{display:none}body{background:#fff;color:#000}}
+:root{--bg:#f4f1f8;--card:#fff;--ink:#1d1630;--mut:#6f6783;--line:#e8e2f0;--pri:#7b2cbf;--pri2:#5a189a;--ok:#14935f;--bad:#d1393b;--warn:#c27a00;--hol:#fff1c9}
+@media(prefers-color-scheme:dark){:root{--bg:#130e1c;--card:#1e1630;--ink:#f1ecfa;--mut:#a99fc0;--line:#322846;--pri:#b57af0;--pri2:#4a1485;--ok:#47c48b;--bad:#ee7a70;--warn:#e0b050;--hol:#3a3216}}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.4 system-ui,-apple-system,Segoe UI,Roboto,sans-serif;padding-bottom:96px}
+.hd{background:var(--pri2);color:#fff;padding:calc(18px + env(safe-area-inset-top)) 20px 34px;border-radius:0 0 26px 26px}
+.hd small{color:#ffffffb8;text-transform:capitalize}.hd h1{font-size:24px;margin:2px 0 0}
+.bk{background:none;padding:0 0 8px;font-size:15px;color:#fff;border:0}
+main{padding:0 14px;max-width:560px;margin:-18px auto 0}
+.card{background:var(--card);border-radius:20px;padding:16px;margin-bottom:14px;box-shadow:0 2px 10px #2a104a14}
+.card>b:first-child,.card h3{display:block;margin-bottom:6px}
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:6px 0}.row.end{justify-content:flex-end}.grow{flex:1}
+button{background:var(--pri);color:#fff;border:0;border-radius:14px;padding:12px 16px;min-height:46px;font:inherit;font-weight:600;cursor:pointer}
+button.ghost{background:none;color:var(--pri);border:1px solid var(--line)}button.red{background:var(--bad)}button.sm{padding:6px 12px;min-height:38px;font-size:14px}
+button.ghost.red{background:none;color:var(--bad)}
+input,select,textarea{font:inherit;font-size:16px;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:12px;width:100%}
+input[type=checkbox]{width:20px;height:20px;vertical-align:middle;margin-right:6px}
+label{display:block;margin:10px 0;color:var(--mut);font-size:14px}label input,label select,label textarea{margin-top:4px}
+.tag{display:inline-block;border-radius:20px;padding:3px 10px;font-size:12px;font-weight:700;white-space:nowrap}
+.tag.bad{background:var(--bad);color:#fff}.tag.ok{background:var(--ok);color:#fff}.tag.warn{background:var(--warn);color:#fff}.tag.gr{background:var(--line);color:var(--mut)}
+small,.mut{color:var(--mut)}.w{width:38px}
+.it{display:flex;gap:12px;align-items:center;padding:12px 0;border-top:1px solid var(--line);cursor:pointer}.it:first-of-type{border-top:0}
+.av{width:44px;height:44px;border-radius:50%;background:color-mix(in srgb,var(--pri) 18%,transparent);color:var(--pri);display:grid;place-items:center;font-weight:800;flex:none}
+.qa{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
+.qa button{background:var(--card);color:var(--ink);border-radius:20px;padding:16px 8px;display:flex;flex-direction:column;gap:6px;align-items:center;box-shadow:0 2px 10px #2a104a14}.qa i{font-style:normal;font-size:28px}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px}.stat{background:var(--card);border-radius:18px;padding:12px;text-align:center;font-size:12px;color:var(--mut)}.stat b{display:block;font-size:24px;color:var(--ink)}
+.days{display:flex;gap:6px;margin:10px 0 14px}.dc{flex:1;min-width:0;padding:8px 0;border-radius:16px;background:var(--card);color:var(--ink);display:flex;flex-direction:column;align-items:center;font-size:12px;font-weight:500;min-height:64px;gap:0}.dc b{font-size:17px}.dc.on{background:var(--pri);color:#fff}.dc span{font-size:10px;color:var(--warn)}.dc.on span{color:#fff}
+.ban{background:var(--hol);border-radius:12px;padding:8px 12px;margin-bottom:8px;font-weight:600}
+.bn{position:fixed;bottom:0;left:0;right:0;background:var(--card);border-top:1px solid var(--line);display:flex;padding:8px 4px calc(8px + env(safe-area-inset-bottom));z-index:9}
+.bn button{background:none;color:var(--mut);flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;font-size:12px;padding:0;min-height:0;font-weight:500}
+.bn i{font-style:normal;font-size:20px;width:56px;height:32px;border-radius:16px;display:grid;place-items:center}
+.bn .on{color:var(--pri);font-weight:700}.bn .on i{background:color-mix(in srgb,var(--pri) 18%,transparent)}
+.fab{position:fixed;right:18px;bottom:calc(88px + env(safe-area-inset-bottom));width:58px;height:58px;border-radius:50%;font-size:30px;padding:0;box-shadow:0 6px 16px #5a189a66;z-index:8}
+dialog{border:0;border-radius:24px 24px 0 0;background:var(--card);color:var(--ink);width:100%;max-width:560px;margin:auto auto 0;padding:18px 18px calc(18px + env(safe-area-inset-bottom));max-height:92vh;overflow:auto}
+dialog::backdrop{background:#0009}
+@media print{.hd,.bn,.fab,button{display:none}body{background:#fff;color:#000}}
 </style>
 </head>
 <body>
@@ -66,7 +66,7 @@ const monday = d => { const x = new Date(d); x.setDate(x.getDate() - (x.getDay()
 const ck = async q => { const r = await q; if (r.error) throw r.error; return r; };
 const hhmm = t => (t||'').slice(0,5);
 
-let S = { tab:'escala', emps:[], esc:[], faltas:[], extras:[], week:monday(new Date()), month:iso(new Date()).slice(0,7), year:new Date().getFullYear(), verInativos:false };
+let S = { tab:'escala', emps:[], esc:[], faltas:[], extras:[], day:iso(new Date()), month:iso(new Date()).slice(0,7), year:new Date().getFullYear(), verInativos:false };
 
 // ---------- Feriados nacionais (calculados para qualquer ano) ----------
 function pascoa(y){const a=y%19,b=Math.floor(y/100),c=y%100,d=Math.floor(b/4),e=b%4,f=Math.floor((b+8)/25),g=Math.floor((b-f+1)/3),h=(19*a+b-d-g+15)%30,i=Math.floor(c/4),k=c%4,l=(32+2*e+2*i-h-k)%7,m=Math.floor((a+11*h+22*l)/451),mes=Math.floor((h+l-7*m+114)/31),dia=((h+l-7*m+114)%31)+1;return new Date(y,mes-1,dia);}
@@ -123,57 +123,86 @@ async function start(){
 }
 
 // ---------- Estrutura ----------
-const TABS = [['escala','Escala'],['func','Funcionários'],['faltas','Faltas'],['feriados','Feriados'],['resumo','Resumo'],['conta','Conta']];
-function render(){
-  $('#app').innerHTML = `<header><div class="top"><h1>Escala da Equipe</h1><button class="ghost sm" id="out">Sair</button></div>
-  <nav>${TABS.map(([k,t]) => `<button class="${S.tab===k?'on':''}" data-t="${k}">${t}</button>`).join('')}</nav></header>
-  <main>${({escala:vEscala,func:vFunc,faltas:vFaltas,feriados:vFeriados,resumo:vResumo,conta:vConta})[S.tab]()}</main>`;
-  $('#out').onclick = async () => { await db.auth.signOut(); start(); };
-  document.querySelectorAll('nav button').forEach(b => b.onclick = () => { S.tab = b.dataset.t; render(); });
-  bind[S.tab] && bind[S.tab]();
-}
+const NAV=[['inicio','Início','🏠'],['escala','Escala','📅'],['faltas','Faltas','📝'],['func','Equipe','👥'],['mais','Mais','☰']];
+const SUB={feriados:'Feriados',resumo:'Resumo para os donos',conta:'Minha conta'};
 const bind = {};
+function render(){
+  const t=S.tab, sub=SUB[t], nav=sub?'mais':t, u=(S.user&&S.user.user_metadata)||{};
+  const tit={inicio:'Olá, '+esc(u.nome||'gerente'),escala:'Escala',faltas:'Faltas',func:'Equipe',mais:'Mais'};
+  const V={inicio:vInicio,escala:vEscala,faltas:vFaltas,func:vFunc,mais:vMais,feriados:vFeriados,resumo:vResumo,conta:vConta};
+  $('#app').innerHTML=`<div class="hd">${sub?'<button class="bk" id="bk">‹ Mais</button><br>':''}<small>${new Date().toLocaleDateString('pt-BR',{weekday:'long',day:'numeric',month:'long'})}</small><h1>${sub||tit[t]}</h1></div>
+  <main>${V[t]()}</main>${(t==='faltas'||t==='func')?'<button class="fab" id="fab">+</button>':''}
+  <nav class="bn">${NAV.map(([k,n,i])=>`<button class="${nav===k?'on':''}" data-t="${k}"><i>${i}</i>${n}</button>`).join('')}</nav>`;
+  document.querySelectorAll('.bn button').forEach(b=>b.onclick=()=>{S.tab=b.dataset.t;render();scrollTo(0,0)});
+  if($('#bk'))$('#bk').onclick=()=>{S.tab='mais';render()};
+  if($('#fab'))$('#fab').onclick=()=>t==='faltas'?faltaForm(null):empForm(null);
+  bind[t]&&bind[t]();
+}
+function sheet(title,btns){
+  const d=document.createElement('dialog');
+  d.innerHTML=`<h3 style="margin-top:0">${title}</h3>${btns.map((b,i)=>`<button class="ghost ${b[2]||''}" style="width:100%;margin:5px 0" data-i="${i}">${b[0]}</button>`).join('')}<button class="ghost" style="width:100%;margin-top:5px" data-i="x">Fechar</button>`;
+  document.body.append(d);d.showModal();d.onclose=()=>d.remove();
+  d.querySelectorAll('button').forEach(b=>b.onclick=async()=>{d.close();if(b.dataset.i!=='x')await btns[b.dataset.i][1]()});
+}
+function situ(e,k){
+  const d=parse(k),f=S.faltas.find(x=>x.funcionario_id===e.id&&x.data===k),sc=S.esc.find(x=>x.funcionario_id===e.id&&x.dia_semana===d.getDay()),cb=S.faltas.filter(x=>x.cobertura_id===e.id&&x.data===k);
+  let sub=!sc?'Sem escala':sc.folga?'Folga':`${hhmm(sc.entrada)} às ${hhmm(sc.saida)}`,tag='';
+  if(f){tag=`<span class="tag bad">${f.atestado?'Atestado':'Faltou'}</span>`;sub=f.cobertura_id?`Coberto por ${esc(nome(f.cobertura_id))}`:'Sem cobertura';}
+  else if(cb.length)tag=`<span class="tag ok">Cobre ${esc(nome(cb[0].funcionario_id))}</span>`;
+  else if(sc&&sc.folga)tag='<span class="tag gr">Folga</span>';
+  return {sub,tag,work:!f&&!!sc&&!sc.folga};
+}
+const item=(e,k)=>{const s=situ(e,k);return `<div class="it" data-e="${e.id}"><div class="av">${esc((e.nome[0]||'?').toUpperCase())}</div><div class="grow"><b>${esc(e.nome)}</b><br><small>${s.sub}</small></div>${s.tag}</div>`};
 
-// ---------- Escala da semana ----------
+// ---------- Início ----------
+function vInicio(){
+  const k=iso(new Date()),y=new Date().getFullYear(),H=feriados(y,y+1),at=S.emps.filter(e=>e.ativo);
+  const trab=at.filter(e=>situ(e,k).work).length,fal=S.faltas.filter(f=>f.data===k).length;
+  const pend=S.faltas.filter(f=>!f.horas_quitadas).reduce((s,f)=>s+ +f.horas_devidas,0);
+  const prox=Object.entries(H).filter(([d])=>d>k).sort()[0];
+  return `<div class="qa"><button data-q="falta"><i>📝</i>Registrar falta</button><button data-q="emp"><i>👤</i>Novo funcionário</button><button data-q="escala"><i>📅</i>Ver escala</button><button data-q="resumo"><i>📊</i>Resumo do mês</button></div>
+  <div class="stats"><div class="stat"><b>${trab}</b>trabalham hoje</div><div class="stat"><b>${fal}</b>faltas hoje</div><div class="stat"><b>${pend}h</b>horas devidas</div></div>
+  <div class="card"><b>Hoje</b>${H[k]?`<div class="ban">★ ${esc(H[k])}</div>`:''}${at.map(e=>item(e,k)).join('')||'<p class="mut">Cadastre sua equipe tocando em "Novo funcionário".</p>'}</div>
+  ${prox?`<div class="card"><b>Próximo feriado</b>${esc(prox[1])} · ${fmt(prox[0])}</div>`:''}`;
+}
+bind.inicio=()=>{
+  document.querySelectorAll('[data-q]').forEach(b=>b.onclick=()=>{const q=b.dataset.q;if(q==='falta')faltaForm(null);else if(q==='emp')empForm(null);else{S.tab=q;render()}});
+  document.querySelectorAll('.it[data-e]').forEach(l=>l.onclick=()=>empForm(S.emps.find(e=>e.id===l.dataset.e)));
+};
+
+// ---------- Mais ----------
+function vMais(){
+  return `<div class="card">${[['feriados','🎉','Feriados','Nacionais e extras'],['resumo','📊','Resumo para os donos','Mês, texto, CSV e impressão'],['conta','👤','Minha conta','Perfil, senha e instalar app']].map(([k,i,t,d])=>`<div class="it" data-go="${k}"><div class="av">${i}</div><div class="grow"><b>${t}</b><br><small>${d}</small></div>›</div>`).join('')}
+  <div class="it" id="so"><div class="av">🚪</div><div class="grow"><b>Sair</b></div></div></div>`;
+}
+bind.mais=()=>{
+  document.querySelectorAll('[data-go]').forEach(b=>b.onclick=()=>{S.tab=b.dataset.go;render();scrollTo(0,0)});
+  $('#so').onclick=async()=>{await db.auth.signOut();start()};
+};
+
+// ---------- Escala (dia a dia) ----------
 function vEscala(){
-  const dias = [...Array(7)].map((_,i) => { const d = new Date(S.week); d.setDate(d.getDate()+i); return d; });
-  const H = feriados(dias[0].getFullYear(), dias[6].getFullYear());
-  const ativos = S.emps.filter(e => e.ativo);
-  const cab = dias.map(d => { const k=iso(d), h=H[k]; return `<th class="${h?'hol':''}">${DIAS[d.getDay()]} ${p2(d.getDate())}/${p2(d.getMonth()+1)}${h?`<br><small>★ ${esc(h)}</small>`:''}</th>`; }).join('');
-  const linhas = ativos.map(e => `<tr><td><b class="lnk" data-e="${e.id}" style="cursor:pointer">${esc(e.nome)}</b><br><small>${esc(e.cargo)}</small></td>` + dias.map(d => {
-    const k = iso(d), f = S.faltas.find(x => x.funcionario_id===e.id && x.data===k), cobre = S.faltas.filter(x => x.cobertura_id===e.id && x.data===k), sc = S.esc.find(x => x.funcionario_id===e.id && x.dia_semana===d.getDay());
-    let c = '';
-    if (f) c += `<span class="tag bad">${f.atestado?'Atestado':'Falta'}</span>` + (f.cobertura_id?`<br><small>cobre: ${esc(nome(f.cobertura_id))}</small>`:'');
-    else c += !sc ? '<small>sem escala</small>' : sc.folga ? '<small>Folga</small>' : `${hhmm(sc.entrada)}–${hhmm(sc.saida)}`;
-    cobre.forEach(x => c += `<br><span class="tag ok">cobre ${esc(nome(x.funcionario_id))}</span>`);
-    return `<td class="${H[k]?'hol':''}">${c}</td>`;
-  }).join('') + '</tr>').join('');
-  const fim = dias[6];
-  return `<div class="card"><div class="row"><button class="ghost sm" id="pv">‹ Semana anterior</button><b class="grow" style="text-align:center">${dias[0].toLocaleDateString('pt-BR')} a ${fim.toLocaleDateString('pt-BR')}</b><button class="ghost sm" id="hj">Hoje</button><button class="ghost sm" id="nx">Próxima ›</button></div>
-  <div class="scroll"><table><tr><th>Funcionário</th>${cab}</tr>${linhas || '<tr><td colspan=8>Cadastre funcionários na aba Funcionários.</td></tr>'}</table></div>
-  <p class="mut"><small>Toque no nome para editar a escala semanal. Dias com ★ são feriados.</small></p></div>`;
+  const wk=monday(parse(S.day)),dias=[...Array(7)].map((_,i)=>new Date(wk.getFullYear(),wk.getMonth(),wk.getDate()+i)),H=feriados(dias[0].getFullYear(),dias[6].getFullYear()),k=S.day,at=S.emps.filter(e=>e.ativo);
+  return `<div class="card" style="padding:10px"><div class="row" style="margin:0"><button class="ghost sm" id="pv">‹</button><b class="grow" style="text-align:center;margin:0">${dias[0].toLocaleDateString('pt-BR',{day:'numeric',month:'short'})} a ${dias[6].toLocaleDateString('pt-BR',{day:'numeric',month:'short'})}</b><button class="ghost sm" id="nx">›</button></div></div>
+  <div class="days">${dias.map(d=>{const q=iso(d);return `<button class="dc ${q===k?'on':''}" data-d="${q}">${DIAS[d.getDay()]}<b>${d.getDate()}</b><span>${H[q]?'★':'&nbsp;'}</span></button>`}).join('')}</div>
+  <div class="card"><b>${parse(k).toLocaleDateString('pt-BR',{weekday:'long',day:'numeric',month:'long'})}</b>${H[k]?`<div class="ban">★ ${esc(H[k])}</div>`:''}${at.map(e=>item(e,k)).join('')||'<p class="mut">Cadastre a equipe na aba Equipe.</p>'}<p class="mut"><small>Toque em um funcionário para editar a escala dele.</small></p></div>`;
 }
-bind.escala = () => {
-  const mv = n => { S.week = new Date(S.week.getFullYear(), S.week.getMonth(), S.week.getDate()+n); render(); };
-  $('#pv').onclick = () => mv(-7); $('#nx').onclick = () => mv(7); $('#hj').onclick = () => { S.week = monday(new Date()); render(); };
-  document.querySelectorAll('.lnk').forEach(l => l.onclick = () => empForm(S.emps.find(e => e.id===l.dataset.e)));
+bind.escala=()=>{
+  const mv=n=>{const d=parse(S.day);d.setDate(d.getDate()+n);S.day=iso(d);render()};
+  $('#pv').onclick=()=>mv(-7);$('#nx').onclick=()=>mv(7);
+  document.querySelectorAll('.dc').forEach(b=>b.onclick=()=>{S.day=b.dataset.d;render()});
+  document.querySelectorAll('.it[data-e]').forEach(l=>l.onclick=()=>empForm(S.emps.find(e=>e.id===l.dataset.e)));
 };
 
-// ---------- Funcionários ----------
+// ---------- Equipe ----------
 function vFunc(){
-  const lista = S.emps.filter(e => S.verInativos || e.ativo);
-  return `<div class="card"><div class="row"><b class="grow">Funcionários (${S.emps.filter(e=>e.ativo).length} ativos)</b><label style="margin:0"><input type="checkbox" id="vi" ${S.verInativos?'checked':''}> mostrar inativos</label><button id="nv">+ Novo funcionário</button></div>
-  ${lista.map(e => `<div class="row" style="border-top:1px solid var(--line);padding-top:8px"><div class="grow"><b>${esc(e.nome)}</b> ${e.ativo?'':'<span class="tag warn">inativo</span>'}<br><small>${esc(e.cargo)} ${e.telefone?'· '+esc(e.telefone):''}</small></div>
-  <button class="ghost sm" data-ed="${e.id}">Editar</button><button class="ghost sm" data-at="${e.id}">${e.ativo?'Desativar':'Reativar'}</button><button class="red sm" data-ex="${e.id}">Excluir</button></div>`).join('') || '<p class="mut">Nenhum funcionário cadastrado.</p>'}
-  <p class="mut"><small>Desativar mantém o histórico de faltas. Excluir apaga o funcionário e todo o histórico dele.</small></p></div>`;
+  const l=[...S.emps].sort((a,b)=>b.ativo-a.ativo);
+  return `<div class="card"><b>${S.emps.filter(e=>e.ativo).length} funcionários ativos</b>${l.map(e=>`<div class="it" data-e="${e.id}"><div class="av">${esc((e.nome[0]||'?').toUpperCase())}</div><div class="grow"><b>${esc(e.nome)}</b><br><small>${esc(e.cargo||'Sem cargo')}${e.telefone?' · '+esc(e.telefone):''}</small></div>${e.ativo?'':'<span class="tag gr">inativo</span>'}</div>`).join('')||'<p class="mut">Toque no + para adicionar o primeiro funcionário.</p>'}</div>`;
 }
-bind.func = () => {
-  $('#nv').onclick = () => empForm(null);
-  $('#vi').onchange = e => { S.verInativos = e.target.checked; render(); };
-  document.querySelectorAll('[data-ed]').forEach(b => b.onclick = () => empForm(S.emps.find(e => e.id===b.dataset.ed)));
-  document.querySelectorAll('[data-at]').forEach(b => b.onclick = async () => { const e = S.emps.find(x => x.id===b.dataset.at); await ck(db.from('funcionarios').update({ativo:!e.ativo}).eq('id',e.id)); load(); });
-  document.querySelectorAll('[data-ex]').forEach(b => b.onclick = async () => { const e = S.emps.find(x => x.id===b.dataset.ex); if (!confirm(`Excluir ${e.nome} e TODO o histórico dele? Isso não pode ser desfeito.`)) return; try{ await ck(db.from('funcionarios').delete().eq('id',e.id)); }catch(x){ alert(x.message); } load(); });
-};
+bind.func=()=>document.querySelectorAll('.it[data-e]').forEach(l=>l.onclick=()=>{
+  const e=S.emps.find(x=>x.id===l.dataset.e);
+  sheet(esc(e.nome),[['✏️ Editar dados e escala',()=>empForm(e)],[e.ativo?'⏸ Desativar (mantém histórico)':'▶️ Reativar',async()=>{await ck(db.from('funcionarios').update({ativo:!e.ativo}).eq('id',e.id));load()}],['🗑 Excluir tudo dele',async()=>{if(!confirm(`Excluir ${e.nome} e TODO o histórico? Não dá para desfazer.`))return;try{await ck(db.from('funcionarios').delete().eq('id',e.id))}catch(x){alert(x.message)}load()},'red']]);
+});
 function empForm(e){
   const sc = e ? S.esc.filter(x => x.funcionario_id===e.id) : [];
   const rows = [1,2,3,4,5,6,0].map(i => { const r = sc.find(x => x.dia_semana===i) || {folga:i===0};
@@ -193,21 +222,21 @@ function empForm(e){
 
 // ---------- Faltas ----------
 function vFaltas(){
-  const lista = S.faltas.filter(f => f.data.startsWith(S.month));
-  return `<div class="card"><div class="row"><input type="month" id="mm" value="${S.month}" style="width:170px"><span class="grow"></span><button id="nf">+ Registrar falta</button></div>
-  <div class="scroll"><table><tr><th>Data</th><th>Funcionário</th><th>Motivo</th><th>Atestado</th><th>Horas devidas</th><th>Cobertura</th><th></th></tr>
-  ${lista.map(f => `<tr><td>${fmt(f.data)}</td><td>${esc(nome(f.funcionario_id))}</td><td>${esc(f.motivo)}${f.observacao?`<br><small>${esc(f.observacao)}</small>`:''}</td>
-  <td>${f.atestado?'<span class="tag ok">Sim</span>':'Não'}</td>
-  <td>${+f.horas_devidas>0 ? `${f.horas_devidas}h ${f.horas_quitadas?'<span class="tag ok">quitadas</span>':'<span class="tag warn">pendentes</span>'}` : '—'}</td>
-  <td>${f.cobertura_id?esc(nome(f.cobertura_id)):'—'}</td>
-  <td style="white-space:nowrap"><button class="ghost sm" data-fe="${f.id}">Editar</button> ${+f.horas_devidas>0?`<button class="ghost sm" data-fq="${f.id}">${f.horas_quitadas?'Reabrir':'Quitar'}</button>`:''} <button class="red sm" data-fd="${f.id}">×</button></td></tr>`).join('') || '<tr><td colspan=7 class="mut">Nenhum registro neste mês.</td></tr>'}</table></div></div>`;
+  const l=S.faltas.filter(f=>f.data.startsWith(S.month));
+  return `<div class="card" style="padding:10px"><input type="month" id="mm" value="${S.month}"></div>
+  ${l.map(f=>`<div class="card" data-f="${f.id}" style="cursor:pointer"><div class="row" style="margin:0"><b class="grow" style="margin:0">${esc(nome(f.funcionario_id))}</b><span class="tag ${f.atestado?'ok':'bad'}">${f.atestado?'Com atestado':'Sem atestado'}</span></div>
+  <small>${fmt(f.data)} · ${esc(f.motivo)}</small>
+  ${+f.horas_devidas>0?`<div style="margin-top:6px">Deve ${f.horas_devidas}h ${f.horas_quitadas?'<span class="tag ok">quitadas</span>':'<span class="tag warn">pendentes</span>'}</div>`:''}
+  ${f.cobertura_id?`<div style="margin-top:4px">Coberto por <b>${esc(nome(f.cobertura_id))}</b></div>`:''}${f.observacao?`<div class="mut" style="margin-top:4px"><small>${esc(f.observacao)}</small></div>`:''}</div>`).join('')||'<div class="card mut">Nenhuma falta neste mês. Toque no + para registrar.</div>'}`;
 }
-bind.faltas = () => {
-  $('#mm').onchange = e => { S.month = e.target.value || S.month; render(); };
-  $('#nf').onclick = () => faltaForm(null);
-  document.querySelectorAll('[data-fe]').forEach(b => b.onclick = () => faltaForm(S.faltas.find(f => f.id===b.dataset.fe)));
-  document.querySelectorAll('[data-fq]').forEach(b => b.onclick = async () => { const f = S.faltas.find(x => x.id===b.dataset.fq); await ck(db.from('faltas').update({horas_quitadas:!f.horas_quitadas}).eq('id',f.id)); load(); });
-  document.querySelectorAll('[data-fd]').forEach(b => b.onclick = async () => { if (!confirm('Apagar este registro?')) return; await ck(db.from('faltas').delete().eq('id',b.dataset.fd)); load(); });
+bind.faltas=()=>{
+  $('#mm').onchange=e=>{S.month=e.target.value||S.month;render()};
+  document.querySelectorAll('[data-f]').forEach(c=>c.onclick=()=>{
+    const f=S.faltas.find(x=>x.id===c.dataset.f),b=[['✏️ Editar',()=>faltaForm(f)]];
+    if(+f.horas_devidas>0)b.push([f.horas_quitadas?'↩️ Reabrir horas':'✅ Marcar horas como quitadas',async()=>{await ck(db.from('faltas').update({horas_quitadas:!f.horas_quitadas}).eq('id',f.id));load()}]);
+    b.push(['🗑 Apagar registro',async()=>{if(!confirm('Apagar este registro?'))return;await ck(db.from('faltas').delete().eq('id',f.id));load()},'red']);
+    sheet(esc(nome(f.funcionario_id))+' · '+fmt(f.data),b);
+  });
 };
 function faltaForm(f){
   const ativos = S.emps.filter(e => e.ativo || (f && (e.id===f.funcionario_id || e.id===f.cobertura_id))).map(e => [e.id, e.nome]);
@@ -261,10 +290,9 @@ function resumoMes(){
 function vResumo(){
   const r = resumoMes(), fm = S.faltas.filter(f => f.data.startsWith(S.month));
   const tot = k => r.reduce((s,x) => s + x[k], 0);
-  return `<div class="card"><div class="row"><input type="month" id="mm" value="${S.month}" style="width:170px"><span class="grow"></span><button class="ghost" id="cp">Copiar texto</button><button class="ghost" id="csv">Baixar CSV</button><button class="ghost" id="pr">Imprimir</button></div>
+  return `<div class="card"><input type="month" id="mm" value="${S.month}"><div class="row"><button class="ghost grow" id="cp">Copiar texto</button><button class="ghost grow" id="csv">CSV</button><button class="ghost grow" id="pr">Imprimir</button></div>
   <div class="stats"><div class="stat"><b>${tot('faltas')}</b>faltas sem atestado</div><div class="stat"><b>${tot('atestados')}</b>atestados</div><div class="stat"><b>${tot('coberturas')}</b>coberturas</div><div class="stat"><b>${tot('pend')}h</b>horas pendentes (total)</div></div></div>
-  <div class="card scroll"><table><tr><th>Funcionário</th><th>Faltas</th><th>Atestados</th><th>Coberturas feitas</th><th>Horas devendo</th></tr>
-  ${r.map(x => `<tr><td>${esc(x.nome)}</td><td>${x.faltas}</td><td>${x.atestados}</td><td>${x.coberturas}</td><td>${x.pend>0?`<span class="tag warn">${x.pend}h</span>`:'—'}</td></tr>`).join('')}</table></div>`;
+  <div class="card">${r.map(x=>`<div class="it" style="cursor:default"><div class="av">${esc((x.nome[0]||'?').toUpperCase())}</div><div class="grow"><b>${esc(x.nome)}</b><br><small>${x.faltas} faltas · ${x.atestados} atestados · ${x.coberturas} coberturas</small></div>${x.pend>0?`<span class="tag warn">${x.pend}h</span>`:''}</div>`).join('')}</div>`;
 }
 function textoResumo(){
   const fm = S.faltas.filter(f => f.data.startsWith(S.month)).sort((a,b) => a.data.localeCompare(b.data));
