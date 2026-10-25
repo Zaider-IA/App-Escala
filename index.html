@@ -4,6 +4,12 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Escala da Equipe</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#1f5f8b">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Escala">
 <style>
 :root{--bg:#f3f5f7;--card:#fff;--ink:#1c2733;--mut:#68788a;--line:#dde3ea;--pri:#1f5f8b;--ok:#1f8a5b;--bad:#c4392f;--warn:#b7791f;--hol:#fff4d6}
 @media(prefers-color-scheme:dark){:root{--bg:#10161d;--card:#18212b;--ink:#e6edf3;--mut:#93a4b6;--line:#2a3745;--pri:#5aa6dc;--ok:#47c48b;--bad:#ee7a70;--warn:#e0b050;--hol:#3a3216}}
@@ -105,23 +111,23 @@ const opts = (list, sel) => list.map(([v,t]) => `<option value="${esc(v)}" ${v==
 // ---------- Login ----------
 async function start(){
   const { data } = await db.auth.getSession();
-  if (data.session) return load();
+  if (data.session) { S.user = data.session.user; return load(); }
   $('#app').innerHTML = `<main><div class="card" style="max-width:380px;margin:40px auto"><h1>Escala da Equipe</h1><p class="mut">Entre com o e-mail e a senha criados no Supabase.</p>
   <label>E-mail<input id="em" type="email" autocomplete="username"></label><label>Senha<input id="pw" type="password" autocomplete="current-password"></label>
   <button id="go" style="width:100%;margin-top:8px">Entrar</button></div></main>`;
   $('#go').onclick = async () => {
-    const { error } = await db.auth.signInWithPassword({ email:$('#em').value.trim(), password:$('#pw').value });
+    const { data:lg, error } = await db.auth.signInWithPassword({ email:$('#em').value.trim(), password:$('#pw').value });
     if (error) return alert('Não foi possível entrar: ' + error.message);
-    load();
+    S.user = lg.user; load();
   };
 }
 
 // ---------- Estrutura ----------
-const TABS = [['escala','Escala'],['func','Funcionários'],['faltas','Faltas'],['feriados','Feriados'],['resumo','Resumo']];
+const TABS = [['escala','Escala'],['func','Funcionários'],['faltas','Faltas'],['feriados','Feriados'],['resumo','Resumo'],['conta','Conta']];
 function render(){
   $('#app').innerHTML = `<header><div class="top"><h1>Escala da Equipe</h1><button class="ghost sm" id="out">Sair</button></div>
   <nav>${TABS.map(([k,t]) => `<button class="${S.tab===k?'on':''}" data-t="${k}">${t}</button>`).join('')}</nav></header>
-  <main>${({escala:vEscala,func:vFunc,faltas:vFaltas,feriados:vFeriados,resumo:vResumo})[S.tab]()}</main>`;
+  <main>${({escala:vEscala,func:vFunc,faltas:vFaltas,feriados:vFeriados,resumo:vResumo,conta:vConta})[S.tab]()}</main>`;
   $('#out').onclick = async () => { await db.auth.signOut(); start(); };
   document.querySelectorAll('nav button').forEach(b => b.onclick = () => { S.tab = b.dataset.t; render(); });
   bind[S.tab] && bind[S.tab]();
@@ -278,6 +284,31 @@ bind.resumo = () => {
     const linhas = [['Data','Funcionário','Motivo','Atestado','Horas devidas','Quitadas','Coberta por','Observação']].concat(S.faltas.filter(f => f.data.startsWith(S.month)).map(f => [fmt(f.data), nome(f.funcionario_id), f.motivo, f.atestado?'Sim':'Não', f.horas_devidas, f.horas_quitadas?'Sim':'Não', f.cobertura_id?nome(f.cobertura_id):'', f.observacao]));
     const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob(['\ufeff' + linhas.map(l => l.map(q).join(';')).join('\n')], {type:'text/csv'})); a.download = `faltas-${S.month}.csv`; a.click();
   };
+};
+
+// ---------- Conta / instalar no celular ----------
+window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); S.ip = e; if (S.tab==='conta' && $('#app main')) render(); });
+window.addEventListener('appinstalled', () => { S.ip = null; if (S.tab==='conta') render(); });
+if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
+const instalado = () => matchMedia('(display-mode: standalone)').matches || navigator.standalone;
+function vConta(){
+  const u = S.user || {}, m = u.user_metadata || {};
+  return `<div class="card"><h3 style="margin-top:0">Meu perfil</h3>
+  <label>Nome<input id="cn" value="${esc(m.nome)}" placeholder="Seu nome"></label>
+  <label>Cargo<input id="cc" value="${esc(m.cargo || 'Gerente')}"></label>
+  <label>E-mail<input value="${esc(u.email)}" disabled></label>
+  <div class="row"><button id="cs">Salvar perfil</button><button class="ghost" id="cp2">Trocar senha</button></div></div>
+  <div class="card"><h3 style="margin-top:0">Instalar no celular</h3>
+  ${instalado() ? '<p><span class="tag ok">App instalado</span> Você já está usando como aplicativo.</p>'
+   : S.ip ? '<p>Instale para abrir direto da tela inicial, sem navegador.</p><button id="ins">Instalar app</button>'
+   : '<p><b>Android (Chrome):</b> toque nos 3 pontinhos ⋮ e em <b>Instalar app</b> (ou <b>Adicionar à tela inicial</b>).</p><p><b>iPhone (Safari):</b> toque em Compartilhar e em <b>Adicionar à Tela de Início</b>.</p>'}</div>`;
+}
+bind.conta = () => {
+  $('#cs').onclick = async () => { const { data, error } = await db.auth.updateUser({ data:{ nome:$('#cn').value.trim(), cargo:$('#cc').value.trim() } }); if (error) return alert(error.message); S.user = data.user; alert('Perfil salvo.'); render(); };
+  $('#cp2').onclick = () => modal('Trocar senha', '<label>Nova senha (mínimo 6 caracteres)<input type="password" name="pw" autocomplete="new-password"></label>', async d => {
+    const pw = d.querySelector('[name="pw"]').value; if (pw.length < 6) throw Error('A senha precisa ter pelo menos 6 caracteres.');
+    const { error } = await db.auth.updateUser({ password:pw }); if (error) throw error; });
+  const i = $('#ins'); if (i) i.onclick = async () => { S.ip.prompt(); await S.ip.userChoice; S.ip = null; render(); };
 };
 
 start();
