@@ -54,7 +54,11 @@ small,.mut{color:var(--mut)}.w{width:38px}
 .fab{position:fixed;right:20px;bottom:calc(96px + env(safe-area-inset-bottom));width:58px;height:58px;border-radius:50%;font-size:30px;padding:0;z-index:8}
 dialog{border:1px solid var(--edge);border-bottom:0;border-radius:30px 30px 0 0;background:var(--sheet);-webkit-backdrop-filter:blur(30px) saturate(180%);backdrop-filter:blur(30px) saturate(180%);color:var(--ink);width:100%;max-width:560px;margin:auto auto 0;padding:18px 18px calc(18px + env(safe-area-inset-bottom));max-height:92vh;overflow:auto}
 dialog::backdrop{background:#0a14204d;-webkit-backdrop-filter:blur(3px);backdrop-filter:blur(3px)}
-@media print{.hd,.bn,.fab,button{display:none}body{background:#fff;color:#000}body::before{display:none}}
+.kv{display:flex;justify-content:space-between;gap:14px;padding:8px 0;border-top:1px solid var(--line);font-size:15px}.kv span{color:var(--mut);flex:none}.kv b{text-align:right;font-weight:600}
+.dia{display:flex;align-items:center;gap:10px;padding:8px 0;border-top:1px solid var(--line)}.dl{margin:0;flex:1;color:var(--ink);font-size:16px;display:flex;align-items:center}.hrs{display:flex;gap:6px}.hrs input{width:104px;padding:8px}.dia.off .hrs{visibility:hidden}
+details>summary{list-style:none;display:flex;gap:12px;align-items:center;cursor:pointer}details>summary::-webkit-details-marker{display:none}details[open]>summary{margin-bottom:8px}details[open]>summary>svg{transform:rotate(90deg)}
+.po{display:none}
+@media print{.hd,.bn,.fab,button{display:none}body{background:#fff;color:#000}body::before{display:none}.po{display:block}.card{box-shadow:none;background:#fff;border:1px solid #ccc;-webkit-backdrop-filter:none;backdrop-filter:none;break-inside:avoid}}
 </style>
 </head>
 <body>
@@ -136,7 +140,7 @@ async function start(){
 const IC={home:'<path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/>',cal:'<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/>',clip:'<rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4v2h6V4M9 11h6M9 15h4"/>',users:'<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c0-3.6 2.9-6 6.5-6s6.5 2.4 6.5 6"/><path d="M16 4.6a3.5 3.5 0 010 6.8M18 14.4c2.2.7 3.5 2.6 3.5 5.6"/>',more:'<circle cx="5" cy="12" r="1.3" fill="currentColor"/><circle cx="12" cy="12" r="1.3" fill="currentColor"/><circle cx="19" cy="12" r="1.3" fill="currentColor"/>',edit:'<path d="M4 20h4L19 9l-4-4L4 16z"/>',uplus:'<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c0-3.6 2.9-6 6.5-6 1.4 0 2.6.3 3.6.9M18 8v6M15 11h6"/>',chart:'<path d="M4 20V10M10 20V4M16 20v-8M22 20H2"/>',star:'<path d="M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1L3.2 9.5l6.1-.9z"/>',user:'<circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7"/>',out:'<path d="M9 4H5a1 1 0 00-1 1v14a1 1 0 001 1h4M16 8l4 4-4 4M20 12H9"/>',chev:'<path d="M9 6l6 6-6 6"/>'};
 const ic=n=>`<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${IC[n]}</svg>`;
 const NAV=[['inicio','Início','home'],['escala','Escala','cal'],['faltas','Faltas','clip'],['func','Equipe','users'],['mais','Mais','more']];
-const SUB={feriados:'Feriados',resumo:'Resumo para os donos',conta:'Minha conta',sabados:'Escala dos sábados',ponto:'Folha de ponto'};
+const SUB={feriados:'Feriados',resumo:'Relatório',conta:'Minha conta',sabados:'Escala dos sábados',ponto:'Folha de ponto'};
 const BACK={sabados:['escala','Escala'],ponto:['func','Equipe']};
 const bind = {};
 function render(){
@@ -149,7 +153,7 @@ function render(){
   document.querySelectorAll('.bn button').forEach(b=>b.onclick=()=>{S.tab=b.dataset.t;render();scrollTo(0,0)});
   if($('#bk'))$('#bk').onclick=()=>{S.tab=(BACK[t]||['mais'])[0];render()};
   if($('#fab'))$('#fab').onclick=()=>t==='faltas'?faltaForm(null):empForm(null);
-  bind[t]&&bind[t]();
+  bind[t]&&bind[t]();if($('#nosat'))$('#nosat').onclick=semSabadoFixo;
 }
 function sheet(title,btns){
   const d=document.createElement('dialog');
@@ -182,7 +186,7 @@ function vInicio(){
   const trab=at.filter(e=>situ(e,k).work).length,fal=S.faltas.filter(f=>f.data===k).length;
   const pend=S.faltas.filter(f=>!f.horas_quitadas).reduce((s,f)=>s+ +f.horas_devidas,0);
   const prox=Object.entries(H).filter(([d])=>d>k).sort()[0];
-  return `<div class="qa"><button data-q="falta">${ic('edit')}Registrar falta</button><button data-q="emp">${ic('uplus')}Novo funcionário</button><button data-q="escala">${ic('cal')}Ver escala</button><button data-q="resumo">${ic('chart')}Resumo do mês</button></div>
+  return `<div class="qa"><button data-q="falta">${ic('edit')}Registrar falta</button><button data-q="emp">${ic('uplus')}Novo funcionário</button><button data-q="escala">${ic('cal')}Ver escala</button><button data-q="resumo">${ic('chart')}Relatório do mês</button></div>
   <div class="stats"><div class="stat"><b>${trab}</b>trabalham hoje</div><div class="stat"><b>${fal}</b>faltas hoje</div><div class="stat"><b>${pend}h</b>horas devidas</div></div>
   <div class="card"><b>Hoje</b>${H[k]?`<div class="ban">Feriado · ${esc(H[k])}</div>`:''}${at.filter(e=>rel(e,k)).map(e=>item(e,k)).join('')||'<p class="mut">Ninguém escalado hoje.</p>'}</div>
   ${prox?`<div class="card"><b>Próximo feriado</b>${esc(prox[1])} · ${fmt(prox[0])}</div>`:''}`;
@@ -194,7 +198,7 @@ bind.inicio=()=>{
 
 // ---------- Mais ----------
 function vMais(){
-  return `<div class="card">${[['sabados','cal','Escala dos sábados','Planeje o mês inteiro'],['feriados','star','Feriados','Nacionais e extras'],['resumo','chart','Resumo para os donos','Mês, texto, CSV e impressão'],['conta','user','Minha conta','Perfil, senha e instalar app']].map(([k,i,t,d])=>`<div class="it" data-go="${k}"><div class="av">${ic(i)}</div><div class="grow"><b>${t}</b><br><small>${d}</small></div>${ic('chev')}</div>`).join('')}
+  return `<div class="card">${[['sabados','cal','Escala dos sábados','Planeje o mês inteiro'],['feriados','star','Feriados','Nacionais e extras'],['resumo','chart','Relatório','Tudo do mês para os donos'],['conta','user','Minha conta','Perfil, senha e instalar app']].map(([k,i,t,d])=>`<div class="it" data-go="${k}"><div class="av">${ic(i)}</div><div class="grow"><b>${t}</b><br><small>${d}</small></div>${ic('chev')}</div>`).join('')}
   <div class="it" id="so"><div class="av">${ic('out')}</div><div class="grow"><b>Sair</b></div></div></div>`;
 }
 bind.mais=()=>{
@@ -291,21 +295,22 @@ bind.ponto=()=>{
 // ---------- Equipe ----------
 function vFunc(){
   const l=[...S.emps].sort((a,b)=>b.ativo-a.ativo);
-  return `<div class="card"><b>${S.emps.filter(e=>e.ativo).length} funcionários ativos</b>${l.map(e=>`<div class="it" data-e="${e.id}"><div class="av">${esc((e.nome[0]||'?').toUpperCase())}</div><div class="grow"><b>${esc(e.nome)}</b><br><small>${e.tipo==='flexivel'?`Flexível · ${e.dias_semana} dias por semana · ${e.horas_dia}h`:esc(e.cargo||'Sem cargo')}${e.telefone?' · '+esc(e.telefone):''}</small></div>${e.ativo?'':'<span class="tag gr">inativo</span>'}</div>`).join('')||'<p class="mut">Toque no + para adicionar o primeiro funcionário.</p>'}</div>`;
+  return `${S.esc.some(x=>x.dia_semana===6&&!x.folga)?'<div class="card"><b>Sábado na escala fixa</b><small>Alguns funcionários ainda têm sábado como dia fixo de trabalho.</small><button class="ghost" id="nosat" style="width:100%;margin-top:8px">Tirar sábado da escala fixa de todos</button></div>':''}<div class="card"><b>${S.emps.filter(e=>e.ativo).length} funcionários ativos</b>${l.map(e=>`<div class="it" data-e="${e.id}"><div class="av">${esc((e.nome[0]||'?').toUpperCase())}</div><div class="grow"><b>${esc(e.nome)}</b><br><small>${e.tipo==='flexivel'?`Flexível · ${e.dias_semana} dias por semana · ${e.horas_dia}h`:esc(e.cargo||'Sem cargo')}${e.telefone?' · '+esc(e.telefone):''}</small></div>${e.ativo?'':'<span class="tag gr">inativo</span>'}</div>`).join('')||'<p class="mut">Toque no + para adicionar o primeiro funcionário.</p>'}</div>`;
 }
 bind.func=()=>document.querySelectorAll('.it[data-e]').forEach(l=>l.onclick=()=>{
   const e=S.emps.find(x=>x.id===l.dataset.e);
   sheet(esc(e.nome),[...(e.tipo==='flexivel'?[['Folha de ponto (registrar horários)',()=>{S.pe=e.id;S.tab='ponto';render()}]]:[]),['Editar dados e escala',()=>empForm(e)],[e.ativo?'Desativar (mantém histórico)':'Reativar',async()=>{await ck(db.from('funcionarios').update({ativo:!e.ativo}).eq('id',e.id));load()}],['Excluir tudo dele',async()=>{if(!confirm(`Excluir ${e.nome} e TODO o histórico? Não dá para desfazer.`))return;try{await ck(db.from('funcionarios').delete().eq('id',e.id))}catch(x){alert(x.message)}load()},'red']]);
 });
+const DIAS_L=['Domingo','Segunda','Terça','Quarta','Quinta','Sexta','Sábado'];
 function empForm(e){
   const sc=e?S.esc.filter(x=>x.funcionario_id===e.id):[];
-  const rows=[1,2,3,4,5,6,0].map(i=>{const r=sc.find(x=>x.dia_semana===i)||{folga:i===0||i===6};
-    return `<div class="row"><b class="w">${DIAS[i]}</b><label style="margin:0"><input type="checkbox" name="f${i}" ${r.folga?'checked':''}>Folga</label><input type="time" name="e${i}" value="${hhmm(r.entrada)||'08:00'}" style="width:110px"><input type="time" name="s${i}" value="${hhmm(r.saida)||'17:00'}" style="width:110px"></div>`}).join('');
+  const rows=[1,2,3,4,5,6,0].map(i=>{const r=sc.find(x=>x.dia_semana===i),on=r?!r.folga:(i>=1&&i<=5);
+    return `<div class="dia"><label class="dl"><input type="checkbox" name="f${i}" ${on?'checked':''}><b>${DIAS_L[i]}</b></label><div class="hrs"><input type="time" name="e${i}" value="${hhmm(r&&r.entrada)||'08:00'}"><input type="time" name="s${i}" value="${hhmm(r&&r.saida)||'17:00'}"></div></div>`}).join('');
   const fx=e&&e.tipo==='flexivel';
   modal(e?'Editar funcionário':'Novo funcionário',
     `<label>Nome<input name="nome" value="${esc(e&&e.nome)}"></label><label>Cargo<input name="cargo" value="${esc(e&&e.cargo)}"></label><label>Telefone<input name="tel" value="${esc(e&&e.telefone)}"></label>
     <label>Tipo de escala<select name="tp"><option value="fixo" ${fx?'':'selected'}>Fixa: dias e horários da semana</option><option value="flexivel" ${fx?'selected':''}>Flexível: X dias por semana, horário livre</option></select></label>
-    <div id="bx">${rows}<p class="mut"><small>Sábado: deixe como folga se a escala muda a cada semana, e escale cada sábado na aba Escala (botão "Escalar neste dia").</small></p></div>
+    <div id="bx"><h4 style="margin:10px 0 2px">Dias fixos de trabalho</h4><p class="mut" style="margin:0 0 6px"><small>Marque só os dias em que ele trabalha toda semana. Sábado alternado: deixe desmarcado e use a Escala dos sábados.</small></p>${rows}</div>
     <div id="bf" style="display:none"><div class="row"><label class="grow">Dias por semana<input type="number" min="1" max="7" name="ds" value="${e?e.dias_semana:3}"></label><label class="grow">Horas por dia<input type="number" step="0.25" min="1" name="hd" value="${e?e.horas_dia:5}"></label></div><p class="mut"><small>Você escolhe o dia e a hora de entrada de cada semana na aba Escala.</small></p></div>`,
     async d=>{
       const g=n=>d.querySelector(`[name="${n}"]`),flex=g('tp').value==='flexivel';
@@ -313,10 +318,11 @@ function empForm(e){
       const p={nome:g('nome').value.trim(),cargo:g('cargo').value.trim()||null,telefone:g('tel').value.trim()||null,tipo:g('tp').value,dias_semana:+g('ds').value||3,horas_dia:+g('hd').value||5};
       let id=e&&e.id;
       if(id)await ck(db.from('funcionarios').update(p).eq('id',id));else id=(await ck(db.from('funcionarios').insert(p).select().single())).data.id;
-      if(!flex){const l=[0,1,2,3,4,5,6].map(i=>({funcionario_id:id,dia_semana:i,folga:g('f'+i).checked,entrada:g('e'+i).value||null,saida:g('s'+i).value||null}));await ck(db.from('escalas').upsert(l,{onConflict:'funcionario_id,dia_semana'}))}
+      if(!flex){const l=[0,1,2,3,4,5,6].map(i=>({funcionario_id:id,dia_semana:i,folga:!g('f'+i).checked,entrada:g('e'+i).value||null,saida:g('s'+i).value||null}));await ck(db.from('escalas').upsert(l,{onConflict:'funcionario_id,dia_semana'}))}
     });
   const d=[...document.querySelectorAll('dialog')].pop(),tg=()=>{const f=d.querySelector('[name="tp"]').value==='flexivel';d.querySelector('#bx').style.display=f?'none':'';d.querySelector('#bf').style.display=f?'':'none'};
   d.querySelector('[name="tp"]').onchange=tg;tg();
+  d.querySelectorAll('.dia input[type=checkbox]').forEach(c=>{const t=()=>c.closest('.dia').classList.toggle('off',!c.checked);c.onchange=t;t()});
 }
 
 // ---------- Faltas ----------
@@ -326,36 +332,57 @@ function vFaltas(){
   ${l.map(f=>`<div class="card" data-f="${f.id}" style="cursor:pointer"><div class="row" style="margin:0"><b class="grow" style="margin:0">${esc(nome(f.funcionario_id))}</b><span class="tag ${f.atestado?'ok':'bad'}">${f.atestado?'Com atestado':'Sem atestado'}</span></div>
   <small>${fmt(f.data)} · ${esc(f.motivo)}</small>
   ${+f.horas_devidas>0?`<div style="margin-top:6px">Deve ${f.horas_devidas}h ${f.horas_quitadas?'<span class="tag ok">quitadas</span>':'<span class="tag warn">pendentes</span>'}</div>`:''}
-  ${f.cobertura_id?`<div style="margin-top:4px">Coberto por <b>${esc(nome(f.cobertura_id))}</b></div>`:''}${f.observacao?`<div class="mut" style="margin-top:4px"><small>${esc(f.observacao)}</small></div>`:''}</div>`).join('')||'<div class="card mut">Nenhuma falta neste mês. Toque no + para registrar.</div>'}`;
+  ${f.cobertura_id?`<div style="margin-top:4px">Coberto por <b>${esc(nome(f.cobertura_id))}</b></div>`:''}${f.observacao?`<div class="mut" style="margin-top:4px"><small>${esc(f.observacao)}</small></div>`:''}${(f.anexos||[]).length?`<div style="margin-top:6px"><span class="tag gr">${f.anexos.length} anexo(s)</span></div>`:''}</div>`).join('')||'<div class="card mut">Nenhuma falta neste mês. Toque no + para registrar.</div>'}`;
 }
 bind.faltas=()=>{
   $('#mm').onchange=e=>{S.month=e.target.value||S.month;render()};
   document.querySelectorAll('[data-f]').forEach(c=>c.onclick=()=>{
-    const f=S.faltas.find(x=>x.id===c.dataset.f),b=[['Editar',()=>faltaForm(f)]];
+    const f=S.faltas.find(x=>x.id===c.dataset.f),b=[...((f.anexos||[]).length?[['Ver atestado / anexos',()=>verAnexos(f)]]:[]),['Editar',()=>faltaForm(f)]];
     if(+f.horas_devidas>0)b.push([f.horas_quitadas?'Reabrir horas':'Marcar horas como quitadas',async()=>{await ck(db.from('faltas').update({horas_quitadas:!f.horas_quitadas}).eq('id',f.id));load()}]);
-    b.push(['Apagar registro',async()=>{if(!confirm('Apagar este registro?'))return;await ck(db.from('faltas').delete().eq('id',f.id));load()},'red']);
+    b.push(['Apagar registro',async()=>{if(!confirm('Apagar este registro?'))return;await ck(db.from('faltas').delete().eq('id',f.id));const ps=(f.anexos||[]).map(a=>a.path);if(ps.length)await db.storage.from('atestados').remove(ps);load()},'red']);
     sheet(esc(nome(f.funcionario_id))+' · '+fmt(f.data),b);
   });
 };
+async function verAnexos(f){
+  const ax=f.anexos||[];if(!ax.length)return alert('Esta falta não tem anexos.');
+  const r=await db.storage.from('atestados').createSignedUrls(ax.map(a=>a.path),600);
+  if(r.error)return alert('Não foi possível abrir: '+r.error.message);
+  const d=document.createElement('dialog');
+  d.innerHTML=`<h3 style="margin-top:0">${esc(nome(f.funcionario_id))} · ${fmt(f.data)}</h3>`+r.data.map((u,i)=>{const a=ax[i],img=(a.tipo||'').startsWith('image/');
+    return `<div style="margin:12px 0"><b>${esc(a.nome)}</b>${img&&u.signedUrl?`<img src="${u.signedUrl}" style="width:100%;border-radius:14px;margin:6px 0;display:block" alt="anexo">`:''}<a href="${u.signedUrl}" target="_blank" rel="noopener"><button type="button" class="ghost" style="width:100%">${img?'Abrir em tela cheia':'Abrir PDF'}</button></a></div>`}).join('')+`<button class="ghost" style="width:100%" id="fx">Fechar</button>`;
+  document.body.append(d);d.showModal();d.onclose=()=>d.remove();d.querySelector('#fx').onclick=()=>d.close();
+}
 function faltaForm(f){
-  const ativos = S.emps.filter(e => e.ativo || (f && (e.id===f.funcionario_id || e.id===f.cobertura_id))).map(e => [e.id, e.nome]);
-  if (!ativos.length) return alert('Cadastre funcionários primeiro.');
-  modal(f ? 'Editar registro' : 'Registrar falta',
-    `<label>Funcionário que faltou<select name="fu">${opts(ativos, f?.funcionario_id)}</select></label>
-     <label>Data<input type="date" name="dt" value="${f?.data || iso(new Date())}"></label>
-     <label>Motivo<select name="mo">${opts(MOTIVOS.map(m => [m,m]), f?.motivo)}</select></label>
-     <label><input type="checkbox" name="at" ${f?.atestado?'checked':''}> Trouxe atestado</label>
-     <label>Horas devidas (0 se não deve)<input type="number" step="0.25" min="0" name="hd" value="${f?.horas_devidas || 0}"></label>
-     <label>Quem cobriu a falta<select name="cb"><option value="">Ninguém</option>${opts(ativos, f?.cobertura_id)}</select></label>
-     <label>Observação<textarea name="ob" rows="3">${esc(f?.observacao)}</textarea></label>`,
-    async d => {
-      const g = n => d.querySelector(`[name="${n}"]`);
-      if (!g('dt').value) throw Error('Informe a data.');
-      if (g('cb').value && g('cb').value === g('fu').value) throw Error('Quem cobriu não pode ser a mesma pessoa que faltou.');
-      const p = { funcionario_id:g('fu').value, data:g('dt').value, motivo:g('mo').value, atestado:g('at').checked, horas_devidas:+g('hd').value||0, cobertura_id:g('cb').value||null, observacao:g('ob').value.trim()||null };
-      if (f) await ck(db.from('faltas').update(p).eq('id',f.id)); else await ck(db.from('faltas').insert(p));
-      S.month = p.data.slice(0,7);
+  const ativos=S.emps.filter(e=>e.ativo||(f&&(e.id===f.funcionario_id||e.id===f.cobertura_id))).map(e=>[e.id,e.nome]);
+  if(!ativos.length)return alert('Cadastre funcionários primeiro.');
+  const ax=(f&&f.anexos)||[];
+  modal(f?'Editar registro':'Registrar falta',
+    `<label>Funcionário que faltou<select name="fu">${opts(ativos,f&&f.funcionario_id)}</select></label>
+     <label>Data<input type="date" name="dt" value="${(f&&f.data)||iso(new Date())}"></label>
+     <label>Motivo<select name="mo">${opts(MOTIVOS.map(m=>[m,m]),f&&f.motivo)}</select></label>
+     <label><input type="checkbox" name="at" ${f&&f.atestado?'checked':''}> Trouxe atestado</label>
+     <div id="axb"><label>Anexar atestado ou comprovante (foto ou PDF)<input type="file" name="ax" accept="image/*,application/pdf" multiple></label>${ax.map((a,i)=>`<label><input type="checkbox" name="rm${i}"> Remover anexo: ${esc(a.nome)}</label>`).join('')}</div>
+     <label>Horas devidas (0 se não deve)<input type="number" step="0.25" min="0" name="hd" value="${(f&&f.horas_devidas)||0}"></label>
+     <label>Quem cobriu a falta<select name="cb"><option value="">Ninguém</option>${opts(ativos,f&&f.cobertura_id)}</select></label>
+     <label>Observação<textarea name="ob" rows="3">${esc(f&&f.observacao)}</textarea></label>`,
+    async d=>{
+      const g=n=>d.querySelector(`[name="${n}"]`);
+      if(!g('dt').value)throw Error('Informe a data.');
+      if(g('cb').value&&g('cb').value===g('fu').value)throw Error('Quem cobriu não pode ser a mesma pessoa que faltou.');
+      const fu=g('fu').value,anexos=ax.filter((a,i)=>!g('rm'+i).checked),rem=ax.filter((a,i)=>g('rm'+i).checked).map(a=>a.path);
+      for(const file of [...g('ax').files]){
+        const ext=((file.name.split('.').pop()||'bin').toLowerCase().replace(/[^a-z0-9]/g,'').slice(0,5))||'bin',path=`${fu}/${Date.now()}-${Math.random().toString(36).slice(2,7)}.${ext}`;
+        const up=await db.storage.from('atestados').upload(path,file,{contentType:file.type||undefined});
+        if(up.error)throw Error('Não foi possível enviar o anexo: '+up.error.message);
+        anexos.push({path,nome:file.name,tipo:file.type});
+      }
+      const p={funcionario_id:fu,data:g('dt').value,motivo:g('mo').value,atestado:g('at').checked,horas_devidas:+g('hd').value||0,cobertura_id:g('cb').value||null,observacao:g('ob').value.trim()||null,anexos};
+      if(f)await ck(db.from('faltas').update(p).eq('id',f.id));else await ck(db.from('faltas').insert(p));
+      if(rem.length)await db.storage.from('atestados').remove(rem);
+      S.month=p.data.slice(0,7);
     });
+  const d=[...document.querySelectorAll('dialog')].pop(),tg=()=>{d.querySelector('#axb').style.display=(d.querySelector('[name="at"]').checked||ax.length)?'':'none'};
+  d.querySelector('[name="at"]').onchange=tg;tg();
 }
 
 // ---------- Feriados ----------
@@ -375,43 +402,76 @@ bind.feriados = () => {
   document.querySelectorAll('[data-xd]').forEach(b => b.onclick = async () => { await ck(db.from('feriados_extras').delete().eq('id',b.dataset.xd)); load(); });
 };
 
-// ---------- Resumo para os donos ----------
-function resumoMes(){
-  const fm = S.faltas.filter(f => f.data.startsWith(S.month));
-  return S.emps.filter(e => e.ativo || fm.some(f => f.funcionario_id===e.id)).map(e => ({
-    nome:e.nome,
-    faltas:fm.filter(f => f.funcionario_id===e.id && !f.atestado).length,
-    atestados:fm.filter(f => f.funcionario_id===e.id && f.atestado).length,
-    coberturas:fm.filter(f => f.cobertura_id===e.id).length,
-    pend:S.faltas.filter(f => f.funcionario_id===e.id && !f.horas_quitadas).reduce((s,f) => s + +f.horas_devidas, 0),
-    flex:e.tipo==='flexivel', horas:S.dias.filter(d => d.funcionario_id===e.id && d.data.startsWith(S.month)).reduce((s,d) => s + horas(d.entrada,d.saida), 0)
-  }));
+// ---------- Relatório do mês ----------
+function turnoDia(e,k){
+  const ov=S.dias.find(x=>x.funcionario_id===e.id&&x.data===k);
+  if(ov)return {en:hhmm(ov.entrada),sa:hhmm(ov.saida)};
+  if(e.tipo==='flexivel')return null;
+  const sc=S.esc.find(x=>x.funcionario_id===e.id&&x.dia_semana===parse(k).getDay());
+  return sc&&!sc.folga&&sc.entrada&&sc.saida?{en:hhmm(sc.entrada),sa:hhmm(sc.saida)}:null;
+}
+const horasPrev=(e,k)=>{const t=turnoDia(e,k);return t?horas(t.en,t.sa):0};
+const kv=(l,v)=>`<div class="kv"><span>${l}</span><b>${v}</b></div>`;
+function relDados(){
+  const ym=S.month,[y,m]=ym.split('-').map(Number),days=[...Array(new Date(y,m,0).getDate())].map((_,i)=>ym+'-'+p2(i+1));
+  const fm=S.faltas.filter(f=>f.data.startsWith(ym)).sort((a,b)=>a.data.localeCompare(b.data)),H=feriados(y);
+  const emps=S.emps.filter(e=>e.ativo||fm.some(f=>f.funcionario_id===e.id||f.cobertura_id===e.id)||S.dias.some(x=>x.funcionario_id===e.id&&x.data.startsWith(ym)));
+  const sab=days.filter(k=>parse(k).getDay()===6).map(k=>({k,itens:emps.map(e=>{const t=turnoDia(e,k);return t&&{nome:e.nome,en:t.en,sa:t.sa,h:horas(t.en,t.sa),falta:fm.some(f=>f.funcionario_id===e.id&&f.data===k)}}).filter(Boolean).sort((a,b)=>a.en.localeCompare(b.en))}));
+  const func=emps.map(e=>{
+    const fe=fm.filter(f=>f.funcionario_id===e.id),ce=fm.filter(f=>f.cobertura_id===e.id),dd=days.map(k=>({k,t:turnoDia(e,k)})).filter(x=>x.t);
+    const prev=dd.reduce((s,x)=>s+horas(x.t.en,x.t.sa),0),falt=fe.reduce((s,f)=>s+horasPrev(e,f.data),0);
+    const cob=ce.map(f=>{const q=S.emps.find(x=>x.id===f.funcionario_id);return {k:f.data,quem:q?q.nome:'—',h:q?horasPrev(q,f.data):0}}),cobH=cob.reduce((s,c)=>s+c.h,0);
+    return {e,fe,cob,cobH,prev,falt,trab:prev-falt+cobH,dias:dd,sabs:dd.filter(x=>parse(x.k).getDay()===6),
+      pendTotal:S.faltas.filter(f=>f.funcionario_id===e.id&&!f.horas_quitadas).reduce((s,f)=>s+ +f.horas_devidas,0),devMes:fe.reduce((s,f)=>s+ +f.horas_devidas,0)};
+  });
+  return {ym,fm,fer:days.filter(k=>H[k]).map(k=>({k,n:H[k]})),sab,func,
+    tot:{faltas:fm.filter(f=>!f.atestado).length,atest:fm.filter(f=>f.atestado).length,cob:fm.filter(f=>f.cobertura_id).length,pend:S.faltas.filter(f=>!f.horas_quitadas).reduce((s,f)=>s+ +f.horas_devidas,0)}};
+}
+const dm=k=>fmt(k).slice(0,5);
+function detalhe(x){
+  const e=x.e,flex=e.tipo==='flexivel',L=[];
+  L.push(kv('Horas trabalhadas',fh(x.trab)),kv('Previstas na escala',fh(x.prev)));
+  if(x.falt>0)L.push(kv('Descontadas por faltas','−'+fh(x.falt)));
+  if(x.cobH>0)L.push(kv('Somadas por coberturas','+'+fh(x.cobH)));
+  L.push(kv(flex?'Dias trabalhados':'Dias escalados',x.dias.length));
+  if(flex&&x.dias.length)L.push(kv('Registros',x.dias.map(d=>`${dm(d.k)} ${d.t.en}–${d.t.sa}`).join('<br>')));
+  if(!flex&&x.sabs.length)L.push(kv('Sábados',x.sabs.map(s=>`${dm(s.k)} ${s.t.en}–${s.t.sa}`).join('<br>')));
+  if(x.fe.length)L.push(kv('Faltas',x.fe.map(f=>`${dm(f.data)} ${esc(f.motivo)}${f.atestado?' (atestado)':''}`).join('<br>')));
+  if(x.cob.length)L.push(kv('Coberturas feitas',x.cob.map(c=>`${dm(c.k)} cobriu ${esc(c.quem)} (${fh(c.h)})`).join('<br>')));
+  if(x.devMes>0||x.pendTotal>0)L.push(kv('Horas devendo',`${fh(x.devMes)} no mês<br>${fh(x.pendTotal)} pendentes no total`));
+  return `<details class="card"><summary><div class="av">${esc((e.nome[0]||'?').toUpperCase())}</div><div class="grow"><b>${esc(e.nome)}</b><br><small>${fh(x.trab)} trabalhadas · ${x.fe.length} falta(s)</small></div>${ic('chev')}</summary>${L.join('')}</details>`;
 }
 function vResumo(){
-  const r = resumoMes(), fm = S.faltas.filter(f => f.data.startsWith(S.month));
-  const tot = k => r.reduce((s,x) => s + x[k], 0);
-  return `<div class="card"><input type="month" id="mm" value="${S.month}"><div class="row"><button class="ghost grow" id="cp">Copiar texto</button><button class="ghost grow" id="csv">CSV</button><button class="ghost grow" id="pr">Imprimir</button></div>
-  <div class="stats"><div class="stat"><b>${tot('faltas')}</b>faltas sem atestado</div><div class="stat"><b>${tot('atestados')}</b>atestados</div><div class="stat"><b>${tot('coberturas')}</b>coberturas</div><div class="stat"><b>${tot('pend')}h</b>horas pendentes (total)</div></div></div>
-  <div class="card">${r.map(x=>`<div class="it" style="cursor:default"><div class="av">${esc((x.nome[0]||'?').toUpperCase())}</div><div class="grow"><b>${esc(x.nome)}</b><br><small>${x.faltas} faltas · ${x.atestados} atestados · ${x.coberturas} coberturas${x.flex?' · '+fh(x.horas)+' trabalhadas':''}</small></div>${x.pend>0?`<span class="tag warn">${x.pend}h</span>`:''}</div>`).join('')}</div>`;
+  const D=relDados(),[y,m]=D.ym.split('-');
+  return `<h2 class="po">Relatório da equipe — ${m}/${y}</h2>
+  <div class="card" style="padding:10px"><input type="month" id="mm" value="${S.month}"></div>
+  <div class="stats" style="grid-template-columns:repeat(2,1fr)"><div class="stat"><b>${D.tot.faltas}</b>faltas sem atestado</div><div class="stat"><b>${D.tot.atest}</b>atestados</div><div class="stat"><b>${D.tot.cob}</b>coberturas</div><div class="stat"><b>${fh(D.tot.pend)}</b>horas devidas pendentes</div></div>
+  <div class="row"><button class="ghost grow" id="cp">Copiar texto</button><button class="ghost grow" id="pr">Imprimir / PDF</button><button class="ghost grow" id="csv">CSV</button></div>
+  <div class="card"><b>Sábados</b>${D.sab.map(s=>`<div style="padding:10px 0;border-top:1px solid var(--line)"><b>${fmt(s.k)}</b>${s.itens.map(i=>kv(esc(i.nome)+(i.falta?' · faltou':''),`${i.en}–${i.sa} · ${fh(i.h)}`)).join('')||'<br><small class="mut">Ninguém escalado.</small>'}</div>`).join('')}</div>
+  <div class="card"><b>Faltas e coberturas</b>${D.fm.map(f=>`<div style="padding:10px 0;border-top:1px solid var(--line)"><div class="row" style="margin:0"><b class="grow">${esc(nome(f.funcionario_id))} · ${fmt(f.data)}</b><span class="tag ${f.atestado?'ok':'bad'}">${f.atestado?'Com atestado':'Sem atestado'}</span></div><small>${esc(f.motivo)}${+f.horas_devidas>0?` · deve ${fh(+f.horas_devidas)} (${f.horas_quitadas?'quitadas':'pendentes'})`:''}${f.cobertura_id?` · coberto por ${esc(nome(f.cobertura_id))}`:' · sem cobertura'}</small>${f.observacao?`<br><small>${esc(f.observacao)}</small>`:''}${(f.anexos||[]).length?`<br><button class="ghost sm" data-ax="${f.id}" style="margin-top:6px">Ver anexos (${f.anexos.length})</button>`:''}</div>`).join('')||'<p class="mut">Nenhuma falta neste mês.</p>'}</div>
+  <b style="display:block;margin:4px 6px 8px">Por funcionário</b>${D.func.map(detalhe).join('')||'<div class="card mut">Nenhum funcionário.</div>'}
+  <p class="mut"><small>Horas contadas da entrada até a saída, sem descontar intervalo. Feriados contam como dia normal de escala${D.fer.length?': '+D.fer.map(x=>dm(x.k)+' '+esc(x.n)).join(', '):''}.</small></p>`;
 }
-function textoResumo(){
-  const fm = S.faltas.filter(f => f.data.startsWith(S.month)).sort((a,b) => a.data.localeCompare(b.data));
-  const [y,m] = S.month.split('-');
-  let t = `RESUMO DA EQUIPE — ${m}/${y}\n\n`;
-  t += fm.length ? fm.map(f => `${fmt(f.data)} — ${nome(f.funcionario_id)}: ${f.motivo}${f.atestado?' (com atestado)':''}${+f.horas_devidas>0?`, deve ${f.horas_devidas}h${f.horas_quitadas?' (quitadas)':''}`:''}${f.cobertura_id?`, coberto por ${nome(f.cobertura_id)}`:''}${f.observacao?` — ${f.observacao}`:''}`).join('\n') : 'Nenhuma ocorrência no mês.';
-  const pend = resumoMes().filter(x => x.pend>0);
-  if (pend.length) t += '\n\nHORAS PENDENTES:\n' + pend.map(x => `${x.nome}: ${x.pend}h`).join('\n');
-  return t;
+function textoRelatorio(){
+  const D=relDados(),[y,m]=D.ym.split('-'),L=[`RELATÓRIO DA EQUIPE — ${m}/${y}`,'',`Faltas sem atestado: ${D.tot.faltas} | Atestados: ${D.tot.atest} | Coberturas: ${D.tot.cob} | Horas devidas pendentes: ${fh(D.tot.pend)}`,'','SÁBADOS'];
+  D.sab.forEach(s=>L.push(`${fmt(s.k)}: `+(s.itens.map(i=>`${i.nome} ${i.en}–${i.sa} (${fh(i.h)})${i.falta?' FALTOU':''}`).join('; ')||'ninguém escalado')));
+  L.push('','FALTAS E COBERTURAS');
+  if(!D.fm.length)L.push('Nenhuma falta no mês.');
+  D.fm.forEach(f=>L.push(`${fmt(f.data)} — ${nome(f.funcionario_id)}: ${f.motivo}${f.atestado?' (com atestado)':' (sem atestado)'}${+f.horas_devidas>0?`, deve ${fh(+f.horas_devidas)}${f.horas_quitadas?' (quitadas)':' (pendentes)'}`:''}${f.cobertura_id?`, coberto por ${nome(f.cobertura_id)}`:', sem cobertura'}${f.observacao?` — ${f.observacao}`:''}`));
+  L.push('','POR FUNCIONÁRIO');
+  D.func.forEach(x=>L.push(`${x.e.nome}: ${fh(x.trab)} trabalhadas (previstas ${fh(x.prev)}${x.falt>0?`, −${fh(x.falt)} por faltas`:''}${x.cobH>0?`, +${fh(x.cobH)} por coberturas`:''}) | ${x.dias.length} dias | ${x.fe.length} falta(s) | devendo ${fh(x.pendTotal)}`));
+  return L.join('\n');
 }
-bind.resumo = () => {
-  $('#mm').onchange = e => { S.month = e.target.value || S.month; render(); };
-  $('#pr').onclick = () => window.print();
-  $('#cp').onclick = async () => { try{ await navigator.clipboard.writeText(textoResumo()); alert('Resumo copiado.'); }catch{ prompt('Copie o texto:', textoResumo()); } };
-  $('#csv').onclick = () => {
-    const q = s => '"' + String(s ?? '').replace(/"/g,'""') + '"';
-    const linhas = [['Data','Funcionário','Motivo','Atestado','Horas devidas','Quitadas','Coberta por','Observação']].concat(S.faltas.filter(f => f.data.startsWith(S.month)).map(f => [fmt(f.data), nome(f.funcionario_id), f.motivo, f.atestado?'Sim':'Não', f.horas_devidas, f.horas_quitadas?'Sim':'Não', f.cobertura_id?nome(f.cobertura_id):'', f.observacao]));
-    const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob(['\ufeff' + linhas.map(l => l.map(q).join(';')).join('\n')], {type:'text/csv'})); a.download = `faltas-${S.month}.csv`; a.click();
+bind.resumo=()=>{
+  $('#mm').onchange=e=>{S.month=e.target.value||S.month;render()};
+  $('#pr').onclick=()=>{document.querySelectorAll('details').forEach(d=>d.open=true);window.print()};
+  $('#cp').onclick=async()=>{const t=textoRelatorio();try{await navigator.clipboard.writeText(t);alert('Relatório copiado.')}catch{prompt('Copie o texto:',t)}};
+  $('#csv').onclick=()=>{
+    const q=v=>'"'+String(v??'').replace(/"/g,'""')+'"';
+    const linhas=[['Data','Funcionário','Motivo','Atestado','Horas devidas','Quitadas','Coberta por','Anexos','Observação']].concat(S.faltas.filter(f=>f.data.startsWith(S.month)).map(f=>[fmt(f.data),nome(f.funcionario_id),f.motivo,f.atestado?'Sim':'Não',f.horas_devidas,f.horas_quitadas?'Sim':'Não',f.cobertura_id?nome(f.cobertura_id):'',(f.anexos||[]).length,f.observacao]));
+    const a=document.createElement('a');a.href=URL.createObjectURL(new Blob(['\ufeff'+linhas.map(l=>l.map(q).join(';')).join('\n')],{type:'text/csv'}));a.download=`faltas-${S.month}.csv`;a.click();
   };
+  document.querySelectorAll('[data-ax]').forEach(b=>b.onclick=()=>verAnexos(S.faltas.find(f=>f.id===b.dataset.ax)));
 };
 
 // ---------- Conta / instalar no celular ----------
