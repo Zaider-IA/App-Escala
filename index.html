@@ -64,6 +64,7 @@ details>summary{list-style:none;display:flex;gap:12px;align-items:center;cursor:
 <body>
 <div id="app"></div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="config.js"></script>
 <script>
 const db = supabase.createClient(CFG.url, CFG.key);
@@ -140,13 +141,13 @@ async function start(){
 const IC={home:'<path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/>',cal:'<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/>',clip:'<rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4v2h6V4M9 11h6M9 15h4"/>',users:'<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c0-3.6 2.9-6 6.5-6s6.5 2.4 6.5 6"/><path d="M16 4.6a3.5 3.5 0 010 6.8M18 14.4c2.2.7 3.5 2.6 3.5 5.6"/>',more:'<circle cx="5" cy="12" r="1.3" fill="currentColor"/><circle cx="12" cy="12" r="1.3" fill="currentColor"/><circle cx="19" cy="12" r="1.3" fill="currentColor"/>',edit:'<path d="M4 20h4L19 9l-4-4L4 16z"/>',uplus:'<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c0-3.6 2.9-6 6.5-6 1.4 0 2.6.3 3.6.9M18 8v6M15 11h6"/>',chart:'<path d="M4 20V10M10 20V4M16 20v-8M22 20H2"/>',star:'<path d="M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1L3.2 9.5l6.1-.9z"/>',user:'<circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7"/>',out:'<path d="M9 4H5a1 1 0 00-1 1v14a1 1 0 001 1h4M16 8l4 4-4 4M20 12H9"/>',chev:'<path d="M9 6l6 6-6 6"/>'};
 const ic=n=>`<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${IC[n]}</svg>`;
 const NAV=[['inicio','Início','home'],['escala','Escala','cal'],['faltas','Faltas','clip'],['func','Equipe','users'],['mais','Mais','more']];
-const SUB={feriados:'Feriados',resumo:'Relatório',conta:'Minha conta',sabados:'Escala dos sábados',ponto:'Folha de ponto'};
-const BACK={sabados:['escala','Escala'],ponto:['func','Equipe']};
+const SUB={feriados:'Feriados',resumo:'Relatório',conta:'Minha conta',sabados:'Escala dos sábados',ponto:'Folha de ponto',relper:'Relatório por período'};
+const BACK={sabados:['escala','Escala'],ponto:['func','Equipe'],relper:['resumo','Relatório']};
 const bind = {};
 function render(){
-  const t=S.tab, sub=SUB[t], nav=BACK[t]?BACK[t][0]:sub?'mais':t, u=(S.user&&S.user.user_metadata)||{};
+  const t=S.tab, sub=SUB[t], nav=BACK[t]&&NAV.some(n=>n[0]===BACK[t][0])?BACK[t][0]:sub?'mais':t, u=(S.user&&S.user.user_metadata)||{};
   const tit={inicio:'Olá, '+esc(u.nome||'gerente'),escala:'Escala',faltas:'Faltas',func:'Equipe',mais:'Mais'};
-  const V={inicio:vInicio,escala:vEscala,faltas:vFaltas,func:vFunc,mais:vMais,feriados:vFeriados,resumo:vResumo,conta:vConta,sabados:vSabados,ponto:vPonto};
+  const V={inicio:vInicio,escala:vEscala,faltas:vFaltas,func:vFunc,mais:vMais,feriados:vFeriados,resumo:vResumo,conta:vConta,sabados:vSabados,ponto:vPonto,relper:vRelPer};
   $('#app').innerHTML=`<div class="hd">${sub?`<button class="bk" id="bk">‹ ${(BACK[t]||['mais','Mais'])[1]}</button><br>`:''}<small>${new Date().toLocaleDateString('pt-BR',{weekday:'long',day:'numeric',month:'long'})}</small><h1>${sub||tit[t]}</h1></div>
   <main>${V[t]()}</main>${(t==='faltas'||t==='func')?'<button class="fab" id="fab">+</button>':''}
   <nav class="bn">${NAV.map(([k,n,i])=>`<button class="${nav===k?'on':''}" data-t="${k}"><i>${ic(i)}</i>${n}</button>`).join('')}</nav>`;
@@ -282,11 +283,12 @@ function vPonto(){
   const l=S.dias.filter(x=>x.funcionario_id===e.id&&x.data.startsWith(S.month)).sort((a,b)=>a.data.localeCompare(b.data)),tot=l.reduce((s,x)=>s+horas(x.entrada,x.saida),0);
   return `<div class="card" style="padding:10px"><input type="month" id="pm" value="${S.month}"></div>
   <div class="stats"><div class="stat"><b>${l.length}</b>dias no mês</div><div class="stat"><b>${fh(tot)}</b>horas no mês</div><div class="stat"><b>${e.dias_semana}×${e.horas_dia}h</b>combinado por semana</div></div>
-  <div class="card"><b>${esc(e.nome)}</b>${l.map(x=>{const h=horas(x.entrada,x.saida);return `<div class="it" data-px="${x.id}"><div class="grow"><b>${fmt(x.data)}</b> <small>${DIAS[parse(x.data).getDay()]}</small><br><small>${hhmm(x.entrada)} às ${hhmm(x.saida)}</small></div><span class="tag ${h>=e.horas_dia?'ok':'warn'}">${fh(h)}</span></div>`}).join('')||'<p class="mut">Nenhum dia registrado neste mês.</p>'}<button id="pa" style="width:100%;margin-top:10px">Registrar dia trabalhado</button></div>`;
+  <div class="card"><b>${esc(e.nome)}</b>${l.map(x=>{const h=horas(x.entrada,x.saida);return `<div class="it" data-px="${x.id}"><div class="grow"><b>${fmt(x.data)}</b> <small>${DIAS[parse(x.data).getDay()]}</small><br><small>${hhmm(x.entrada)} às ${hhmm(x.saida)}</small></div><span class="tag ${h>=e.horas_dia?'ok':'warn'}">${fh(h)}</span></div>`}).join('')||'<p class="mut">Nenhum dia registrado neste mês.</p>'}<button id="pa" style="width:100%;margin-top:10px">Registrar dia trabalhado</button><button class="ghost" id="pr2" style="width:100%;margin-top:8px">Relatório / PDF por período</button></div>`;
 }
 bind.ponto=()=>{
   const e=S.emps.find(x=>x.id===S.pe);
   $('#pm').onchange=ev=>{S.month=ev.target.value||S.month;render()};
+  $('#pr2').onclick=()=>{S.rp.emp=S.pe;setSemana(0);S.tab='relper';render()};
   $('#pa').onclick=()=>{const h=iso(new Date());diaForm(h.startsWith(S.month)?h:S.month+'-01',e,true)};
   document.querySelectorAll('.it[data-px]').forEach(l=>l.onclick=()=>{const x=S.dias.find(y=>y.id===l.dataset.px);
     sheet(esc(e.nome)+' · '+fmt(x.data),[['Alterar horários',()=>diaForm(x.data,e,true)],['Remover este dia',async()=>{await ck(db.from('escalas_dia').delete().eq('id',x.id));load()},'red']])});
@@ -299,7 +301,7 @@ function vFunc(){
 }
 bind.func=()=>document.querySelectorAll('.it[data-e]').forEach(l=>l.onclick=()=>{
   const e=S.emps.find(x=>x.id===l.dataset.e);
-  sheet(esc(e.nome),[...(e.tipo==='flexivel'?[['Folha de ponto (registrar horários)',()=>{S.pe=e.id;S.tab='ponto';render()}]]:[]),['Editar dados e escala',()=>empForm(e)],[e.ativo?'Desativar (mantém histórico)':'Reativar',async()=>{await ck(db.from('funcionarios').update({ativo:!e.ativo}).eq('id',e.id));load()}],['Excluir tudo dele',async()=>{if(!confirm(`Excluir ${e.nome} e TODO o histórico? Não dá para desfazer.`))return;try{await ck(db.from('funcionarios').delete().eq('id',e.id))}catch(x){alert(x.message)}load()},'red']]);
+  sheet(esc(e.nome),[...(e.tipo==='flexivel'?[['Folha de ponto (registrar horários)',()=>{S.pe=e.id;S.tab='ponto';render()}]]:[]),['Relatório por período',()=>{S.rp.emp=e.id;S.tab='relper';render()}],['Editar dados e escala',()=>empForm(e)],[e.ativo?'Desativar (mantém histórico)':'Reativar',async()=>{await ck(db.from('funcionarios').update({ativo:!e.ativo}).eq('id',e.id));load()}],['Excluir tudo dele',async()=>{if(!confirm(`Excluir ${e.nome} e TODO o histórico? Não dá para desfazer.`))return;try{await ck(db.from('funcionarios').delete().eq('id',e.id))}catch(x){alert(x.message)}load()},'red']]);
 });
 const DIAS_L=['Domingo','Segunda','Terça','Quarta','Quinta','Sexta','Sábado'];
 function empForm(e){
@@ -402,7 +404,7 @@ bind.feriados = () => {
   document.querySelectorAll('[data-xd]').forEach(b => b.onclick = async () => { await ck(db.from('feriados_extras').delete().eq('id',b.dataset.xd)); load(); });
 };
 
-// ---------- Relatório do mês ----------
+// ---------- Relatório (mês, funcionário e período) ----------
 function turnoDia(e,k){
   const ov=S.dias.find(x=>x.funcionario_id===e.id&&x.data===k);
   if(ov)return {en:hhmm(ov.entrada),sa:hhmm(ov.saida)};
@@ -412,22 +414,42 @@ function turnoDia(e,k){
 }
 const horasPrev=(e,k)=>{const t=turnoDia(e,k);return t?horas(t.en,t.sa):0};
 const kv=(l,v)=>`<div class="kv"><span>${l}</span><b>${v}</b></div>`;
-function relDados(){
-  const ym=S.month,[y,m]=ym.split('-').map(Number),days=[...Array(new Date(y,m,0).getDate())].map((_,i)=>ym+'-'+p2(i+1));
-  const fm=S.faltas.filter(f=>f.data.startsWith(ym)).sort((a,b)=>a.data.localeCompare(b.data)),H=feriados(y);
-  const emps=S.emps.filter(e=>e.ativo||fm.some(f=>f.funcionario_id===e.id||f.cobertura_id===e.id)||S.dias.some(x=>x.funcionario_id===e.id&&x.data.startsWith(ym)));
-  const sab=days.filter(k=>parse(k).getDay()===6).map(k=>({k,itens:emps.map(e=>{const t=turnoDia(e,k);return t&&{nome:e.nome,en:t.en,sa:t.sa,h:horas(t.en,t.sa),falta:fm.some(f=>f.funcionario_id===e.id&&f.data===k)}}).filter(Boolean).sort((a,b)=>a.en.localeCompare(b.en))}));
+const dm=k=>fmt(k).slice(0,5);
+const slug=t=>String(t).normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-zA-Z0-9]+/g,'-').replace(/^-|-$/g,'')||'relatorio';
+const diasEntre=(de,ate)=>{const r=[],d=parse(de),f=parse(ate);while(d<=f&&r.length<400){r.push(iso(d));d.setDate(d.getDate()+1)}return r};
+const mesRange=ym=>{const [y,m]=ym.split('-').map(Number);return [ym+'-01',ym+'-'+p2(new Date(y,m,0).getDate())]};
+function rotulo(de,ate){const [a,b]=mesRange(de.slice(0,7));return de===a&&ate===b?de.slice(5,7)+'/'+de.slice(0,4):fmt(de)+' a '+fmt(ate)}
+function setSemana(n){const m=monday(new Date());m.setDate(m.getDate()+7*n);const f=new Date(m);f.setDate(f.getDate()+6);S.rp.de=iso(m);S.rp.ate=iso(f)}
+function setMes(n){const d=new Date(),a=new Date(d.getFullYear(),d.getMonth()+n,1),[de,ate]=mesRange(iso(a).slice(0,7));S.rp.de=de;S.rp.ate=ate}
+S.rp={emp:'',de:'',ate:''};setSemana(0);
+
+function relDados(de,ate,empId){
+  const days=diasEntre(de,ate),H=feriados(...new Set(days.map(k=>+k.slice(0,4))));
+  const fm0=S.faltas.filter(f=>f.data>=de&&f.data<=ate).sort((a,b)=>a.data.localeCompare(b.data));
+  let emps=S.emps.filter(e=>e.ativo||fm0.some(f=>f.funcionario_id===e.id||f.cobertura_id===e.id)||S.dias.some(x=>x.funcionario_id===e.id&&x.data>=de&&x.data<=ate));
+  if(empId)emps=emps.filter(e=>e.id===empId);
+  const fm=empId?fm0.filter(f=>f.funcionario_id===empId||f.cobertura_id===empId):fm0,pr=empId?fm.filter(f=>f.funcionario_id===empId):fm;
+  const sab=days.filter(k=>parse(k).getDay()===6).map(k=>({k,itens:emps.map(e=>{const t=turnoDia(e,k);return t&&{nome:e.nome,en:t.en,sa:t.sa,h:horas(t.en,t.sa),falta:fm0.some(f=>f.funcionario_id===e.id&&f.data===k)}}).filter(Boolean).sort((a,b)=>a.en.localeCompare(b.en))}));
   const func=emps.map(e=>{
-    const fe=fm.filter(f=>f.funcionario_id===e.id),ce=fm.filter(f=>f.cobertura_id===e.id),dd=days.map(k=>({k,t:turnoDia(e,k)})).filter(x=>x.t);
+    const fe=fm0.filter(f=>f.funcionario_id===e.id),ce=fm0.filter(f=>f.cobertura_id===e.id),dd=days.map(k=>({k,t:turnoDia(e,k)})).filter(x=>x.t);
     const prev=dd.reduce((s,x)=>s+horas(x.t.en,x.t.sa),0),falt=fe.reduce((s,f)=>s+horasPrev(e,f.data),0);
     const cob=ce.map(f=>{const q=S.emps.find(x=>x.id===f.funcionario_id);return {k:f.data,quem:q?q.nome:'—',h:q?horasPrev(q,f.data):0}}),cobH=cob.reduce((s,c)=>s+c.h,0);
     return {e,fe,cob,cobH,prev,falt,trab:prev-falt+cobH,dias:dd,sabs:dd.filter(x=>parse(x.k).getDay()===6),
       pendTotal:S.faltas.filter(f=>f.funcionario_id===e.id&&!f.horas_quitadas).reduce((s,f)=>s+ +f.horas_devidas,0),devMes:fe.reduce((s,f)=>s+ +f.horas_devidas,0)};
   });
-  return {ym,fm,fer:days.filter(k=>H[k]).map(k=>({k,n:H[k]})),sab,func,
-    tot:{faltas:fm.filter(f=>!f.atestado).length,atest:fm.filter(f=>f.atestado).length,cob:fm.filter(f=>f.cobertura_id).length,pend:S.faltas.filter(f=>!f.horas_quitadas).reduce((s,f)=>s+ +f.horas_devidas,0)}};
+  return {de,ate,empId,fm,fer:days.filter(k=>H[k]).map(k=>({k,n:H[k]})),sab,func,
+    tot:{faltas:pr.filter(f=>!f.atestado).length,atest:pr.filter(f=>f.atestado).length,cob:empId?fm.filter(f=>f.cobertura_id===empId).length:fm.filter(f=>f.cobertura_id).length,
+      pend:S.faltas.filter(f=>!f.horas_quitadas&&(!empId||f.funcionario_id===empId)).reduce((s,f)=>s+ +f.horas_devidas,0)}};
 }
-const dm=k=>fmt(k).slice(0,5);
+function diaria(x){
+  const R=[];
+  x.dias.forEach(d=>{const f=x.fe.find(f=>f.data===d.k);R.push({k:d.k,txt:f?`Faltou · ${f.motivo}${f.atestado?' (atestado)':''}`:`${d.t.en}-${d.t.sa} · ${fh(horas(d.t.en,d.t.sa))}`,h:f?0:horas(d.t.en,d.t.sa)})});
+  x.fe.filter(f=>!x.dias.some(d=>d.k===f.data)).forEach(f=>R.push({k:f.data,txt:`Falta registrada · ${f.motivo}`,h:0}));
+  x.cob.forEach(c=>R.push({k:c.k,txt:`Cobriu ${c.quem} · +${fh(c.h)}`,h:c.h}));
+  return R.sort((a,b)=>a.k.localeCompare(b.k));
+}
+const diasTrab=x=>x.dias.filter(d=>!x.fe.some(f=>f.data===d.k)).length;
+
 function detalhe(x){
   const e=x.e,flex=e.tipo==='flexivel',L=[];
   L.push(kv('Horas trabalhadas',fh(x.trab)),kv('Previstas na escala',fh(x.prev)));
@@ -438,40 +460,99 @@ function detalhe(x){
   if(!flex&&x.sabs.length)L.push(kv('Sábados',x.sabs.map(s=>`${dm(s.k)} ${s.t.en}–${s.t.sa}`).join('<br>')));
   if(x.fe.length)L.push(kv('Faltas',x.fe.map(f=>`${dm(f.data)} ${esc(f.motivo)}${f.atestado?' (atestado)':''}`).join('<br>')));
   if(x.cob.length)L.push(kv('Coberturas feitas',x.cob.map(c=>`${dm(c.k)} cobriu ${esc(c.quem)} (${fh(c.h)})`).join('<br>')));
-  if(x.devMes>0||x.pendTotal>0)L.push(kv('Horas devendo',`${fh(x.devMes)} no mês<br>${fh(x.pendTotal)} pendentes no total`));
+  if(x.devMes>0||x.pendTotal>0)L.push(kv('Horas devendo',`${fh(x.devMes)} no período<br>${fh(x.pendTotal)} pendentes no total`));
   return `<details class="card"><summary><div class="av">${esc((e.nome[0]||'?').toUpperCase())}</div><div class="grow"><b>${esc(e.nome)}</b><br><small>${fh(x.trab)} trabalhadas · ${x.fe.length} falta(s)</small></div>${ic('chev')}</summary>${L.join('')}</details>`;
 }
-function vResumo(){
-  const D=relDados(),[y,m]=D.ym.split('-');
-  return `<h2 class="po">Relatório da equipe — ${m}/${y}</h2>
-  <div class="card" style="padding:10px"><input type="month" id="mm" value="${S.month}"></div>
-  <div class="stats" style="grid-template-columns:repeat(2,1fr)"><div class="stat"><b>${D.tot.faltas}</b>faltas sem atestado</div><div class="stat"><b>${D.tot.atest}</b>atestados</div><div class="stat"><b>${D.tot.cob}</b>coberturas</div><div class="stat"><b>${fh(D.tot.pend)}</b>horas devidas pendentes</div></div>
-  <div class="row"><button class="ghost grow" id="cp">Copiar texto</button><button class="ghost grow" id="pr">Imprimir / PDF</button><button class="ghost grow" id="csv">CSV</button></div>
-  <div class="card"><b>Sábados</b>${D.sab.map(s=>`<div style="padding:10px 0;border-top:1px solid var(--line)"><b>${fmt(s.k)}</b>${s.itens.map(i=>kv(esc(i.nome)+(i.falta?' · faltou':''),`${i.en}–${i.sa} · ${fh(i.h)}`)).join('')||'<br><small class="mut">Ninguém escalado.</small>'}</div>`).join('')}</div>
-  <div class="card"><b>Faltas e coberturas</b>${D.fm.map(f=>`<div style="padding:10px 0;border-top:1px solid var(--line)"><div class="row" style="margin:0"><b class="grow">${esc(nome(f.funcionario_id))} · ${fmt(f.data)}</b><span class="tag ${f.atestado?'ok':'bad'}">${f.atestado?'Com atestado':'Sem atestado'}</span></div><small>${esc(f.motivo)}${+f.horas_devidas>0?` · deve ${fh(+f.horas_devidas)} (${f.horas_quitadas?'quitadas':'pendentes'})`:''}${f.cobertura_id?` · coberto por ${esc(nome(f.cobertura_id))}`:' · sem cobertura'}</small>${f.observacao?`<br><small>${esc(f.observacao)}</small>`:''}${(f.anexos||[]).length?`<br><button class="ghost sm" data-ax="${f.id}" style="margin-top:6px">Ver anexos (${f.anexos.length})</button>`:''}</div>`).join('')||'<p class="mut">Nenhuma falta neste mês.</p>'}</div>
-  <b style="display:block;margin:4px 6px 8px">Por funcionário</b>${D.func.map(detalhe).join('')||'<div class="card mut">Nenhum funcionário.</div>'}
-  <p class="mut"><small>Horas contadas da entrada até a saída, sem descontar intervalo. Feriados contam como dia normal de escala${D.fer.length?': '+D.fer.map(x=>dm(x.k)+' '+esc(x.n)).join(', '):''}.</small></p>`;
+const notaRel=D=>`<p class="mut"><small>Horas contadas da entrada até a saída, sem descontar intervalo. Feriados contam como dia normal de escala${D.fer.length?': '+D.fer.map(x=>dm(x.k)+' '+esc(x.n)).join(', '):''}.</small></p>`;
+function faltasCard(D){
+  return `<div class="card"><b>Faltas e coberturas</b>${D.fm.map(f=>`<div style="padding:10px 0;border-top:1px solid var(--line)"><div class="row" style="margin:0"><b class="grow">${esc(nome(f.funcionario_id))} · ${fmt(f.data)}</b><span class="tag ${f.atestado?'ok':'bad'}">${f.atestado?'Com atestado':'Sem atestado'}</span></div><small>${esc(f.motivo)}${+f.horas_devidas>0?` · deve ${fh(+f.horas_devidas)} (${f.horas_quitadas?'quitadas':'pendentes'})`:''}${f.cobertura_id?` · coberto por ${esc(nome(f.cobertura_id))}`:' · sem cobertura'}</small>${f.observacao?`<br><small>${esc(f.observacao)}</small>`:''}${(f.anexos||[]).length?`<br><button class="ghost sm" data-ax="${f.id}" style="margin-top:6px">Ver anexos (${f.anexos.length})</button>`:''}</div>`).join('')||'<p class="mut">Nenhuma falta neste período.</p>'}</div>`;
 }
-function textoRelatorio(){
-  const D=relDados(),[y,m]=D.ym.split('-'),L=[`RELATÓRIO DA EQUIPE — ${m}/${y}`,'',`Faltas sem atestado: ${D.tot.faltas} | Atestados: ${D.tot.atest} | Coberturas: ${D.tot.cob} | Horas devidas pendentes: ${fh(D.tot.pend)}`,'','SÁBADOS'];
-  D.sab.forEach(s=>L.push(`${fmt(s.k)}: `+(s.itens.map(i=>`${i.nome} ${i.en}–${i.sa} (${fh(i.h)})${i.falta?' FALTOU':''}`).join('; ')||'ninguém escalado')));
-  L.push('','FALTAS E COBERTURAS');
-  if(!D.fm.length)L.push('Nenhuma falta no mês.');
+function corpoEquipe(D){
+  return `<div class="stats" style="grid-template-columns:repeat(2,1fr)"><div class="stat"><b>${D.tot.faltas}</b>faltas sem atestado</div><div class="stat"><b>${D.tot.atest}</b>atestados</div><div class="stat"><b>${D.tot.cob}</b>coberturas</div><div class="stat"><b>${fh(D.tot.pend)}</b>horas devidas pendentes</div></div>
+  <div class="card"><b>Sábados</b>${D.sab.map(s=>`<div style="padding:10px 0;border-top:1px solid var(--line)"><b>${fmt(s.k)}</b>${s.itens.map(i=>kv(esc(i.nome)+(i.falta?' · faltou':''),`${i.en}–${i.sa} · ${fh(i.h)}`)).join('')||'<br><small class="mut">Ninguém escalado.</small>'}</div>`).join('')||'<p class="mut">Nenhum sábado neste período.</p>'}</div>
+  ${faltasCard(D)}<b style="display:block;margin:4px 6px 8px">Por funcionário</b>${D.func.map(detalhe).join('')||'<div class="card mut">Nenhum funcionário.</div>'}${notaRel(D)}`;
+}
+function corpoFunc(D){
+  const x=D.func[0];if(!x)return '<div class="card mut">Sem dados deste funcionário no período.</div>';
+  const rows=diaria(x);
+  return `<div class="stats" style="grid-template-columns:repeat(2,1fr)"><div class="stat"><b>${diasTrab(x)}</b>dias trabalhados</div><div class="stat"><b>${fh(x.trab)}</b>horas trabalhadas</div><div class="stat"><b>${x.fe.length}</b>faltas</div><div class="stat"><b>${fh(x.pendTotal)}</b>horas devendo</div></div>
+  <div class="card"><b>${esc(x.e.nome)} · dia a dia</b>${rows.map(r=>kv(`${dm(r.k)} ${DIAS[parse(r.k).getDay()]}`,esc(r.txt))).join('')||'<p class="mut">Nenhum dia neste período.</p>'}${kv('Total',`${diasTrab(x)} dias · ${fh(x.trab)}`)}</div>
+  ${D.fm.length?faltasCard(D):''}${notaRel(D)}`;
+}
+function linhasRel(D){
+  const x=D.empId&&D.func[0],t=D.tot,L=[`## RELATÓRIO ${x?'DE '+x.e.nome.toUpperCase():'DA EQUIPE'} — ${rotulo(D.de,D.ate)}`,''];
+  if(D.empId&&!x)L.push('Sem dados deste funcionário no período.');
+  else if(x){
+    L.push(`Dias trabalhados: ${diasTrab(x)} | Horas trabalhadas: ${fh(x.trab)} | Faltas: ${x.fe.length} | Horas devendo: ${fh(x.pendTotal)}`,'','## DIA A DIA');
+    const rows=diaria(x);if(!rows.length)L.push('Nenhum dia no período.');
+    rows.forEach(r=>L.push(`${fmt(r.k)} ${DIAS[parse(r.k).getDay()]}: ${r.txt}`));
+    L.push('',`TOTAL: ${diasTrab(x)} dias, ${fh(x.trab)}`);
+  }else{
+    L.push(`Faltas sem atestado: ${t.faltas} | Atestados: ${t.atest} | Coberturas: ${t.cob} | Horas devidas pendentes: ${fh(t.pend)}`,'','## SÁBADOS');
+    D.sab.forEach(s=>L.push(`${fmt(s.k)}: `+(s.itens.map(i=>`${i.nome} ${i.en}-${i.sa} (${fh(i.h)})${i.falta?' FALTOU':''}`).join('; ')||'ninguém escalado')));
+  }
+  L.push('','## FALTAS E COBERTURAS');
+  if(!D.fm.length)L.push('Nenhuma falta no período.');
   D.fm.forEach(f=>L.push(`${fmt(f.data)} — ${nome(f.funcionario_id)}: ${f.motivo}${f.atestado?' (com atestado)':' (sem atestado)'}${+f.horas_devidas>0?`, deve ${fh(+f.horas_devidas)}${f.horas_quitadas?' (quitadas)':' (pendentes)'}`:''}${f.cobertura_id?`, coberto por ${nome(f.cobertura_id)}`:', sem cobertura'}${f.observacao?` — ${f.observacao}`:''}`));
-  L.push('','POR FUNCIONÁRIO');
-  D.func.forEach(x=>L.push(`${x.e.nome}: ${fh(x.trab)} trabalhadas (previstas ${fh(x.prev)}${x.falt>0?`, −${fh(x.falt)} por faltas`:''}${x.cobH>0?`, +${fh(x.cobH)} por coberturas`:''}) | ${x.dias.length} dias | ${x.fe.length} falta(s) | devendo ${fh(x.pendTotal)}`));
-  return L.join('\n');
+  if(!D.empId){L.push('','## POR FUNCIONÁRIO');D.func.forEach(y=>L.push(`${y.e.nome}: ${fh(y.trab)} trabalhadas (previstas ${fh(y.prev)}${y.falt>0?`, -${fh(y.falt)} por faltas`:''}${y.cobH>0?`, +${fh(y.cobH)} por coberturas`:''}) | ${y.dias.length} dias | ${y.fe.length} falta(s) | devendo ${fh(y.pendTotal)}`))}
+  L.push('','Horas contadas da entrada até a saída, sem descontar intervalo.');
+  return L;
+}
+const textoRel=D=>linhasRel(D).map(l=>l.replace(/^## /,'')).join('\n');
+const nomeArq=D=>{const x=D.empId&&D.func[0];return `Relatorio_${slug(x?x.e.nome:'equipe')}_${D.de}_a_${D.ate}`};
+function baixarPDF(D){
+  const J=window.jspdf&&window.jspdf.jsPDF;
+  if(!J){alert('Não consegui carregar o gerador de PDF (precisa de internet). Vou abrir a impressão: escolha "Salvar como PDF".');document.querySelectorAll('details').forEach(d=>d.open=true);window.print();return}
+  const doc=new J({unit:'mm',format:'a4'});let y=18;
+  const limpa=t=>String(t).replace(/[–—−]/g,'-').replace(/[^\x00-\xFF]/g,'');
+  linhasRel(D).forEach(l=>{const h=l.startsWith('## ');doc.setFont('helvetica',h?'bold':'normal');doc.setFontSize(h?12:10);if(h)y+=3;
+    doc.splitTextToSize(limpa(h?l.slice(3):l),180).forEach(p=>{if(y>280){doc.addPage();y=18}doc.text(p,15,y);y+=h?6:5})});
+  doc.save(nomeArq(D)+'.pdf');
+}
+function baixarCSV(linhas,nomeA){
+  const q=v=>'"'+String(v??'').replace(/"/g,'""')+'"';
+  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob(['\ufeff'+linhas.map(l=>l.map(q).join(';')).join('\n')],{type:'text/csv'}));a.download=nomeA+'.csv';a.click();
+}
+function csvRel(D){
+  const x=D.empId&&D.func[0];
+  if(x)baixarCSV([['Data','Dia','Situação','Horas']].concat(diaria(x).map(r=>[fmt(r.k),DIAS[parse(r.k).getDay()],r.txt,String(Math.round(r.h*100)/100).replace('.',',')])),nomeArq(D));
+  else baixarCSV([['Data','Funcionário','Motivo','Atestado','Horas devidas','Quitadas','Coberta por','Anexos','Observação']].concat(D.fm.map(f=>[fmt(f.data),nome(f.funcionario_id),f.motivo,f.atestado?'Sim':'Não',f.horas_devidas,f.horas_quitadas?'Sim':'Não',f.cobertura_id?nome(f.cobertura_id):'',(f.anexos||[]).length,f.observacao])),nomeArq(D));
+}
+async function copiarRel(D){const t=textoRel(D);try{await navigator.clipboard.writeText(t);alert('Relatório copiado.')}catch{prompt('Copie o texto:',t)}}
+const botoesRel=()=>`<div class="row"><button class="grow" id="pdf">Baixar PDF</button><button class="ghost grow" id="cp">Copiar texto</button><button class="ghost grow" id="csv">CSV</button></div>`;
+function ligaRel(getD){
+  $('#pdf').onclick=()=>baixarPDF(getD());$('#cp').onclick=()=>copiarRel(getD());$('#csv').onclick=()=>csvRel(getD());
+  document.querySelectorAll('[data-ax]').forEach(b=>b.onclick=()=>verAnexos(S.faltas.find(f=>f.id===b.dataset.ax)));
+}
+
+// Relatório do mês (equipe inteira)
+function vResumo(){
+  return `<div class="card" style="padding:10px"><input type="month" id="mm" value="${S.month}"></div>
+  <button class="ghost" id="rp" style="width:100%;margin-bottom:12px">Relatório por funcionário ou período</button>${botoesRel()}${corpoEquipe(relDados(...mesRange(S.month)))}`;
 }
 bind.resumo=()=>{
   $('#mm').onchange=e=>{S.month=e.target.value||S.month;render()};
-  $('#pr').onclick=()=>{document.querySelectorAll('details').forEach(d=>d.open=true);window.print()};
-  $('#cp').onclick=async()=>{const t=textoRelatorio();try{await navigator.clipboard.writeText(t);alert('Relatório copiado.')}catch{prompt('Copie o texto:',t)}};
-  $('#csv').onclick=()=>{
-    const q=v=>'"'+String(v??'').replace(/"/g,'""')+'"';
-    const linhas=[['Data','Funcionário','Motivo','Atestado','Horas devidas','Quitadas','Coberta por','Anexos','Observação']].concat(S.faltas.filter(f=>f.data.startsWith(S.month)).map(f=>[fmt(f.data),nome(f.funcionario_id),f.motivo,f.atestado?'Sim':'Não',f.horas_devidas,f.horas_quitadas?'Sim':'Não',f.cobertura_id?nome(f.cobertura_id):'',(f.anexos||[]).length,f.observacao]));
-    const a=document.createElement('a');a.href=URL.createObjectURL(new Blob(['\ufeff'+linhas.map(l=>l.map(q).join(';')).join('\n')],{type:'text/csv'}));a.download=`faltas-${S.month}.csv`;a.click();
-  };
-  document.querySelectorAll('[data-ax]').forEach(b=>b.onclick=()=>verAnexos(S.faltas.find(f=>f.id===b.dataset.ax)));
+  $('#rp').onclick=()=>{S.rp.emp='';setMes(0);S.tab='relper';render()};
+  ligaRel(()=>relDados(...mesRange(S.month)));
+};
+
+// Relatório por funcionário e período (ex.: semana da limpeza)
+const perD=()=>{const r=S.rp;return r.de&&r.ate&&r.de<=r.ate?relDados(r.de,r.ate,r.emp||null):null};
+function vRelPer(){
+  const r=S.rp,D=perD(),lista=[['','Toda a equipe'],...S.emps.map(e=>[e.id,e.nome+(e.ativo?'':' (inativo)')])];
+  return `<div class="card"><label>Funcionário<select id="rpe">${opts(lista,r.emp)}</select></label>
+  <div class="row"><label class="grow">De<input type="date" id="rpd" value="${r.de}"></label><label class="grow">Até<input type="date" id="rpa" value="${r.ate}"></label></div>
+  <div class="row"><button class="ghost sm" data-w="0">Esta semana</button><button class="ghost sm" data-w="-1">Semana passada</button><button class="ghost sm" data-m="0">Este mês</button><button class="ghost sm" data-m="-1">Mês passado</button></div></div>
+  ${D?botoesRel()+(D.empId?corpoFunc(D):corpoEquipe(D)):'<div class="card mut">A data inicial precisa ser antes da data final.</div>'}`;
+}
+bind.relper=()=>{
+  const r=S.rp;
+  $('#rpe').onchange=e=>{r.emp=e.target.value;render()};
+  $('#rpd').onchange=e=>{r.de=e.target.value||r.de;render()};
+  $('#rpa').onchange=e=>{r.ate=e.target.value||r.ate;render()};
+  document.querySelectorAll('[data-w]').forEach(b=>b.onclick=()=>{setSemana(+b.dataset.w);render()});
+  document.querySelectorAll('[data-m]').forEach(b=>b.onclick=()=>{setMes(+b.dataset.m);render()});
+  if(perD())ligaRel(perD);
 };
 
 // ---------- Conta / instalar no celular ----------
