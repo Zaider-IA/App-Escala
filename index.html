@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Escala da Equipe</title>
 <link rel="manifest" href="manifest.json">
-<meta name="theme-color" content="#eef3f7">
+<meta name="theme-color" content="#ffffff">
 <link rel="icon" href="icon-192.png">
 <link rel="apple-touch-icon" href="icon-192.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -65,6 +65,24 @@ button.fab{background:linear-gradient(135deg,var(--c2),var(--c1));color:#fff;bor
 .dia{display:flex;align-items:center;gap:10px;padding:8px 0;border-top:1px solid var(--line)}.dl{margin:0;flex:1;color:var(--ink);font-size:16px;display:flex;align-items:center}.hrs{display:flex;gap:6px}.hrs input{width:104px;padding:8px}.dia.off .hrs{visibility:hidden}
 details>summary{list-style:none;display:flex;gap:12px;align-items:center;cursor:pointer}details>summary::-webkit-details-marker{display:none}details[open]>summary{margin-bottom:8px}details[open]>summary>svg{transform:rotate(90deg)}
 .po{display:none}
+/* ===== tema sério: fundo branco, cartões sólidos; vidro só na barra de baixo e nas janelas ===== */
+:root{--bg:#ffffff;--card:#ffffff;--sheet:rgba(255,255,255,.88);--edge:#e4e8ed;--line:#e9ecf0;--field:#f4f6f8;--shd:0 1px 2px rgba(20,30,45,.06),0 4px 14px rgba(20,30,45,.05)}
+@media(prefers-color-scheme:dark){:root{--bg:#0f1316;--card:#171c21;--sheet:rgba(23,28,33,.9);--edge:#27303a;--line:#242c35;--field:#1e252c;--shd:0 1px 2px rgba(0,0,0,.4),0 4px 14px rgba(0,0,0,.25)}}
+body::before{display:none}
+.card,.stat,.qa button,.dc,.card.tint,.stat.tint,.qa button.tint,.card.tint.soft{background:var(--card);border:1px solid var(--edge);box-shadow:var(--shd);-webkit-backdrop-filter:none;backdrop-filter:none}
+.hero::before{display:none}
+.stat b,.stat.tint b{color:var(--ink)}
+.qi,.av{background:color-mix(in srgb,var(--pri) 10%,var(--card));border:1px solid color-mix(in srgb,var(--pri) 22%,var(--edge));color:var(--pri);box-shadow:none}
+.card[data-f]{border-left:4px solid var(--t)}
+button{background:var(--pri);border:0;box-shadow:none;border-radius:14px}
+button.ghost{background:var(--card);border:1px solid var(--edge);color:var(--pri);-webkit-backdrop-filter:none;backdrop-filter:none}
+button.red{background:var(--bad);color:#fff}button.ghost.red{background:var(--card);color:var(--bad)}
+.dc.on{background:var(--pri);border-color:var(--pri);color:var(--onpri);box-shadow:none}
+.bn{background:color-mix(in srgb,var(--card) 72%,transparent);-webkit-backdrop-filter:blur(22px) saturate(170%);backdrop-filter:blur(22px) saturate(170%);border:1px solid var(--edge);box-shadow:0 8px 28px rgba(20,30,45,.14)}
+.bn button{background:none;border:0;box-shadow:none}
+.bn .on i{background:color-mix(in srgb,var(--pri) 13%,transparent);border:0;box-shadow:none}
+button.fab{background:var(--pri);color:var(--onpri);border:0;box-shadow:0 6px 16px rgba(20,30,45,.25)}
+.bk{background:none;color:var(--pri)}
 @media print{.hd,.bn,.fab,button{display:none}body{background:#fff;color:#000}body::before{display:none}.po{display:block}.card{box-shadow:none;background:#fff;border:1px solid #ccc;-webkit-backdrop-filter:none;backdrop-filter:none;break-inside:avoid}}
 </style>
 </head>
