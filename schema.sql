@@ -85,3 +85,15 @@ drop policy if exists "atestados apagar" on storage.objects;
 create policy "atestados ver" on storage.objects for select to authenticated using (bucket_id = 'atestados');
 create policy "atestados enviar" on storage.objects for insert to authenticated with check (bucket_id = 'atestados');
 create policy "atestados apagar" on storage.objects for delete to authenticated using (bucket_id = 'atestados');
+
+-- ===== Escala dos feriados =====
+
+create table if not exists feriado_modo (
+  data date primary key,
+  modo text not null check (modo in ('especial', 'fechado')),
+  criado_em timestamptz not null default now()
+);
+
+alter table feriado_modo enable row level security;
+drop policy if exists "logado acessa" on feriado_modo;
+create policy "logado acessa" on feriado_modo for all to authenticated using (true) with check (true);
