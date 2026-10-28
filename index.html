@@ -549,10 +549,78 @@ const nomeArq=D=>{const x=D.empId&&D.func[0];return `Relatorio_${slug(x?x.e.nome
 function baixarPDF(D){
   const J=window.jspdf&&window.jspdf.jsPDF;
   if(!J){alert('Não consegui carregar o gerador de PDF (precisa de internet). Vou abrir a impressão: escolha "Salvar como PDF".');document.querySelectorAll('details').forEach(d=>d.open=true);window.print();return}
-  const doc=new J({unit:'mm',format:'a4'});let y=18;
-  const limpa=t=>String(t).replace(/[–—−]/g,'-').replace(/[^\x00-\xFF]/g,'');
-  linhasRel(D).forEach(l=>{const h=l.startsWith('## ');doc.setFont('helvetica',h?'bold':'normal');doc.setFontSize(h?12:10);if(h)y+=3;
-    doc.splitTextToSize(limpa(h?l.slice(3):l),180).forEach(p=>{if(y>280){doc.addPage();y=18}doc.text(p,15,y);y+=h?6:5})});
+  const doc=new J({unit:'mm',format:'a4'}),W=210,PH=297,M=14,CW=W-2*M,x=D.empId&&D.func[0];
+  const hex=h=>[1,3,5].map(i=>parseInt(h.slice(i,i+2),16));
+  const K={ink:[28,34,44],mut:[107,114,128],line:[226,229,234],zebra:[247,248,250],head:[238,240,244],pri:hex(DS.cores.pri),dark:[11,14,17],white:[255,255,255],
+    ok:[22,163,74],okb:[220,252,231],bad:[220,38,38],badb:[254,226,226],info:[37,99,235],infob:[219,234,254],warn:[217,119,6],warnb:[254,243,199],gr:[75,85,99],grb:[229,231,235]};
+  const L=t=>String(t==null?'':t).replace(/[–—−]/g,'-').replace(/[^\x00-\xFF]/g,'');
+  const F=c=>doc.setFillColor(...c),T=c=>doc.setTextColor(...c),S=c=>doc.setDrawColor(...c);
+  const ft=(sz,b)=>{doc.setFont('helvetica',b?'bold':'normal');doc.setFontSize(sz)};
+  let y=M;
+  const ensure=h=>{if(y+h>PH-16){doc.addPage();y=M}};
+  // cabeçalho em faixa escura com detalhe na cor principal
+  F(K.dark);doc.rect(0,0,W,36,'F');F(K.pri);doc.rect(0,36,W,1.6,'F');
+  ft(8,true);T(K.pri);doc.text(L('RELATÓRIO'),M,12);
+  ft(19,true);T(K.white);doc.text(L(x?x.e.nome:'Equipe'),M,22);
+  ft(10,false);T([190,196,205]);doc.text(L('Período: '+rotulo(D.de,D.ate)+'   ·   gerado em '+new Date().toLocaleDateString('pt-BR')),M,30);
+  try{if(DS.logo&&DS.logoInfo){const h=14,w=Math.min(46,h*DS.logoInfo.w/DS.logoInfo.h);doc.addImage(DS.logo,'PNG',W-M-w,10,w,h)}else if(DS.nome){ft(9,true);T(K.white);doc.text(L(DS.nome.toUpperCase()),W-M,14,{align:'right'})}}catch(e){}
+  y=47;
+  const kpis=items=>{const n=items.length,g=4,w=(CW-g*(n-1))/n,h=25;ensure(h+6);
+    items.forEach((it,i)=>{const bx=M+i*(w+g);F(K.white);S(K.line);doc.setLineWidth(.3);doc.roundedRect(bx,y,w,h,2.5,2.5,'FD');F(it.c);doc.roundedRect(bx,y,w,2.4,1.2,1.2,'F');
+      ft(18,true);T(it.c);doc.text(L(it.n),bx+w/2,y+14,{align:'center'});ft(7.5,false);T(K.mut);doc.splitTextToSize(L(it.l),w-4).slice(0,2).forEach((t,j)=>doc.text(t,bx+w/2,y+19+j*3.4,{align:'center'}))});
+    y+=h+9};
+  const secao=t=>{ensure(18);F(K.pri);doc.roundedRect(M,y,2.2,6.5,1,1,'F');ft(12,true);T(K.ink);doc.text(L(t),M+5,y+5);y+=11};
+  const pill=(px,py,t,fg,bg)=>{ft(7.5,true);const w=doc.getTextWidth(L(t))+6;F(bg);doc.roundedRect(px,py-3.9,w,5.4,2.7,2.7,'F');T(fg);doc.text(L(t),px+3,py);return w};
+  const tabela=(cols,rows)=>{
+    const rh=7.4,hh=8;
+    const cab=()=>{F(K.head);doc.rect(M,y,CW,hh,'F');ft(7.5,true);T(K.mut);let cx=M;cols.forEach(c=>{doc.text(L(c.t).toUpperCase(),c.al==='r'?cx+c.w-3:cx+3,y+5.3,{align:c.al==='r'?'right':'left'});cx+=c.w});y+=hh};
+    ensure(hh+rh*2);cab();
+    rows.forEach((r,i)=>{
+      if(y+rh>PH-16){doc.addPage();y=M;cab()}
+      if(i%2){F(K.zebra);doc.rect(M,y,CW,rh,'F')}
+      if(r.top){S(K.line);doc.setLineWidth(.4);doc.line(M,y,M+CW,y)}
+      let cx=M;
+      r.c.forEach((cell,j)=>{const col=cols[j],o=(cell&&typeof cell==='object')?cell:{t:cell};
+        ft(8.5,!!o.b);T(o.k||K.ink);let t=L(o.t);const mw=col.w-6;
+        if(doc.getTextWidth(t)>mw){while(t.length>1&&doc.getTextWidth(t+'...')>mw)t=t.slice(0,-1);t+='...'}
+        doc.text(t,col.al==='r'?cx+col.w-3:cx+3,y+5,{align:col.al==='r'?'right':'left'});cx+=col.w});
+      y+=rh});
+    S(K.line);doc.setLineWidth(.3);doc.line(M,y,M+CW,y);y+=9};
+  const cartoes=fm=>fm.forEach(f=>{
+    ft(8,false);const obs=f.observacao?doc.splitTextToSize(L(f.observacao),CW-14):[],h=23+obs.length*3.8+(obs.length?1.5:0),cor=f.atestado?K.ok:K.bad;
+    ensure(h+4);F(K.white);S(K.line);doc.setLineWidth(.3);doc.roundedRect(M,y,CW,h,2.5,2.5,'FD');F(cor);doc.roundedRect(M,y,2.8,h,1.4,1.4,'F');
+    ft(10.5,true);T(K.ink);doc.text(L(nome(f.funcionario_id)),M+7,y+6.5);
+    ft(7.5,true);const lab=f.atestado?'Com atestado':'Sem atestado',pw=doc.getTextWidth(L(lab))+6;pill(M+CW-pw-4,y+6.5,lab,cor,f.atestado?K.okb:K.badb);
+    ft(8.5,false);T(K.mut);doc.text(L(fmt(f.data)+'   ·   '+f.motivo),M+7,y+12.2);
+    let px=M+7;const py=y+18.6;
+    px+=pill(px,py,f.cobertura_id?'Coberto por '+nome(f.cobertura_id):'Sem cobertura',f.cobertura_id?K.ok:K.gr,f.cobertura_id?K.okb:K.grb)+2;
+    if(+f.horas_devidas>0)px+=pill(px,py,'Deve '+fh(+f.horas_devidas)+(f.horas_quitadas?' (quitadas)':' (pendentes)'),K.warn,K.warnb)+2;
+    if((f.anexos||[]).length)pill(px,py,f.anexos.length+' anexo(s)',K.info,K.infob);
+    if(obs.length){ft(8,false);T(K.mut);obs.forEach((t,i)=>doc.text(t,M+7,y+25.2+i*3.8))}
+    y+=h+4});
+  if(D.empId&&!x){ft(11,false);T(K.mut);doc.text('Sem dados deste funcionário no período.',M,y);y+=10}
+  else if(x){
+    kpis([{n:diasTrab(x),l:'dias trabalhados',c:K.ok},{n:fh(x.trab),l:'horas trabalhadas',c:K.info},{n:x.fe.length,l:'faltas',c:K.bad},{n:fh(x.pendTotal),l:'horas devendo',c:K.warn}]);
+    secao('Dia a dia');
+    const rows=diaria(x).map(r=>{const bad=/^Falt/.test(r.txt),cob=/^Cobriu/.test(r.txt);return {c:[fmt(r.k),DIAS[parse(r.k).getDay()],{t:r.txt,k:bad?K.bad:cob?K.ok:K.ink,b:bad||cob},{t:bad?'-':fh(r.h),b:true}]}});
+    tabela([{t:'Data',w:30},{t:'Dia',w:20},{t:'Situação',w:96},{t:'Horas',w:36,al:'r'}],rows.length?rows:[{c:['','','Nenhum dia no período.','']}]);
+    ensure(14);F(K.dark);doc.roundedRect(M,y-4,CW,10,2,2,'F');ft(9.5,true);T(K.white);doc.text('TOTAL DO PERÍODO',M+5,y+2.3);doc.text(L(diasTrab(x)+' dias   ·   '+fh(x.trab)),M+CW-5,y+2.3,{align:'right'});y+=16;
+  }else{
+    const t=D.tot;kpis([{n:t.faltas,l:'faltas sem atestado',c:K.bad},{n:t.atest,l:'atestados',c:K.ok},{n:t.cob,l:'coberturas',c:K.info},{n:fh(t.pend),l:'horas devidas pendentes',c:K.warn}]);
+    secao('Sábados');
+    const rows=[];D.sab.forEach(s=>{if(!s.itens.length)rows.push({top:true,c:[fmt(s.k),{t:'Ninguém escalado',k:K.mut},'','']});else s.itens.forEach((i,n)=>rows.push({top:n===0,c:[n===0?{t:fmt(s.k),b:true}:'',{t:i.nome+(i.falta?'  (faltou)':''),k:i.falta?K.bad:K.ink,b:i.falta},i.en+' - '+i.sa,{t:fh(i.h),b:true}]}))});
+    tabela([{t:'Sábado',w:34},{t:'Funcionário',w:72},{t:'Horário',w:46},{t:'Horas',w:30,al:'r'}],rows.length?rows:[{c:['','Nenhum sábado no período.','','']}]);
+  }
+  secao('Faltas e coberturas');
+  if(!D.fm.length){ft(9.5,false);T(K.mut);doc.text('Nenhuma falta neste período.',M,y);y+=10}else cartoes(D.fm);
+  if(!D.empId){
+    secao('Por funcionário');
+    tabela([{t:'Funcionário',w:44},{t:'Previstas',w:24,al:'r'},{t:'Faltas',w:28,al:'r'},{t:'Cobertas',w:24,al:'r'},{t:'Trabalhadas',w:28,al:'r'},{t:'Dias',w:14,al:'r'},{t:'Devendo',w:20,al:'r'}],
+      D.func.map(y2=>({c:[{t:y2.e.nome,b:true},fh(y2.prev),y2.fe.length?{t:y2.fe.length+' (-'+fh(y2.falt)+')',k:K.bad,b:true}:'-',y2.cobH>0?{t:'+'+fh(y2.cobH),k:K.ok,b:true}:'-',{t:fh(y2.trab),b:true},String(y2.dias.length),y2.pendTotal>0?{t:fh(y2.pendTotal),k:K.warn,b:true}:'-']})));
+  }
+  ft(7.5,false);T(K.mut);const nota=doc.splitTextToSize(L('Horas contadas da entrada até a saída, sem descontar intervalo. Feriados contam como dia normal de escala.'),CW);ensure(nota.length*3.6+2);nota.forEach((t,i)=>doc.text(t,M,y+i*3.6));
+  const n=doc.getNumberOfPages();
+  for(let i=1;i<=n;i++){doc.setPage(i);S(K.line);doc.setLineWidth(.3);doc.line(M,PH-12,W-M,PH-12);ft(7.5,false);T(K.mut);doc.text('Escala da Equipe',M,PH-7.5);doc.text(L('Página '+i+' de '+n),W-M,PH-7.5,{align:'right'})}
   doc.save(nomeArq(D)+'.pdf');
 }
 function baixarCSV(linhas,nomeA){
