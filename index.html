@@ -501,6 +501,7 @@ function vFerEscala(){
   const H=feriados(+S.fm.slice(0,4)),lista=Object.entries(H).filter(([k])=>k.startsWith(S.fm)).sort(),at=S.emps.filter(e=>e.ativo);
   const tg={normal:['gr','Escala normal'],especial:['ok','Escala especial'],fechado:['bad','Fechado']};
   return `<div class="card" style="padding:10px"><input type="month" id="fm" value="${S.fm}"></div>
+  <div class="row"><button class="grow" id="fpdf">Baixar PDF do mês</button><button class="ghost grow" id="ftxt">Copiar texto</button></div>
   ${S.fmErro?'<div class="card"><b>Falta uma atualização no banco</b><small>Rode o arquivo atualizacao3.sql no Supabase (SQL Editor) para liberar a escala dos feriados.</small></div>':''}
   ${lista.map(([k,nm])=>{const md=S.fmodo[k]||'normal',[c,t]=tg[md],itens=md==='fechado'?[]:at.map(e=>({e,t:turnoDia(e,k)})).filter(x=>x.t).sort((a,b)=>a.t.en.localeCompare(b.t.en));
     return `<div class="card"><div class="row" style="margin:0"><div class="grow"><b>${fmt(k)} · ${DIAS[parse(k).getDay()]}</b><br><small>${esc(nm)}</small></div><span class="tag ${c}">${t}</span></div>
@@ -510,6 +511,8 @@ function vFerEscala(){
 }
 bind.ferescala=()=>{
   $('#fm').onchange=e=>{S.fm=e.target.value||S.fm;render()};
+  $('#fpdf').onclick=()=>escolheQuem(ids=>baixarFeriadosPDF(S.fm,ids),'Baixar PDF');
+  $('#ftxt').onclick=()=>escolheQuem(async ids=>{const t=textoFeriados(S.fm,ids);try{await navigator.clipboard.writeText(t);alert('Escala copiada. É só colar no WhatsApp.')}catch{prompt('Copie o texto:',t)}},'Copiar');
   document.querySelectorAll('[data-fs],[data-fk]').forEach(b=>b.onclick=()=>feriadoSheet(b.dataset.fs||b.dataset.fk));
 };
 
@@ -638,6 +641,7 @@ function cabecalhoPDF(doc,c,kicker,titulo,sub){
       if(DS.sub){ft(7,true);const bw=doc.getTextWidth(L(DS.sub.toUpperCase()))+8,by=l2?22.5:16;F(hex('#F7B932'));doc.roundedRect(W-M-bw,by,bw,5,0.8,0.8,'F');T(K.white);doc.text(L(DS.sub.toUpperCase()),W-M-bw/2,by+3.5,{align:'center'})}}
   }catch(e){}
 }
+const difer=it=>it.length>1&&it[0].en!==it[it.length-1].en;
 const mesNome=ym=>{const [y,m]=ym.split('-').map(Number),t=new Date(y,m-1,1).toLocaleDateString('pt-BR',{month:'long',year:'numeric'});return t.charAt(0).toUpperCase()+t.slice(1)};
 function baixarSabadosPDF(ym,ids){
   const J=window.jspdf&&window.jspdf.jsPDF;
@@ -663,7 +667,7 @@ function baixarSabadosPDF(ym,ids){
       const base=y+(h-n*10)/2+7+k*10;
       ft(12,true);T(K.ink);doc.text(L(i.en+' - '+i.sa),rx,base);
       ft(12,false);let nm=L(i.nome);const mw=CW-34-8-44-34;while(nm.length>1&&doc.getTextWidth(nm)>mw)nm=nm.slice(0,-1);doc.text(nm,rx+44,base);
-      if(it.length>1&&(k===0||k===it.length-1)){const lab=k===0?'Abre':'Fecha';ft(7.5,true);const pw=doc.getTextWidth(lab)+6;pill(M+CW-pw-4,base,lab,k===0?K.ok:K.info,k===0?K.okb:K.infob)}
+      if(difer(it)&&(k===0||k===it.length-1)){const lab=k===0?'Abre':'Fecha';ft(7.5,true);const pw=doc.getTextWidth(lab)+6;pill(M+CW-pw-4,base,lab,k===0?K.ok:K.info,k===0?K.okb:K.infob)}
     });
     y+=h+5;
   });
@@ -673,7 +677,51 @@ function baixarSabadosPDF(ym,ids){
 }
 function textoSabados(ym,ids){
   const [de,ate]=mesRange(ym),D=relDados(de,ate),L=['ESCALA DOS SÁBADOS - '+mesNome(ym).toUpperCase(),''];
-  D.sab.forEach(s=>{const it=s.itens.filter(i=>ids.includes(i.id));L.push('Sábado '+dm(s.k));if(!it.length)L.push('  sem escala definida');it.forEach((i,n)=>L.push(`  ${i.en} às ${i.sa} - ${i.nome}${it.length>1?(n===0?' (abre)':n===it.length-1?' (fecha)':''):''}`));L.push('')});
+  D.sab.forEach(s=>{const it=s.itens.filter(i=>ids.includes(i.id));L.push('Sábado '+dm(s.k));if(!it.length)L.push('  sem escala definida');it.forEach((i,n)=>L.push(`  ${i.en} às ${i.sa} - ${i.nome}${difer(it)?(n===0?' (abre)':n===it.length-1?' (fecha)':''):''}`));L.push('')});
+  return L.join('\n').trim();
+}
+function baixarFeriadosPDF(ym,ids){
+  const J=window.jspdf&&window.jspdf.jsPDF;
+  if(!J){alert('Não consegui carregar o gerador de PDF (precisa de internet). Tente de novo com internet.');return}
+  const [de,ate]=mesRange(ym),D=relDados(de,ate);
+  if(!D.ferEsc.length)return alert('Não há feriados neste mês.');
+  const doc=new J({unit:'mm',format:'a4'}),c=pdfCtx(doc),{K,F,T,S,ft,L,W,PH,M,CW}=c;
+  cabecalhoPDF(doc,c,'ESCALA DOS FERIADOS',mesNome(ym),'Gerado em '+new Date().toLocaleDateString('pt-BR'));
+  const onp=lum(DS.cores.pri)>.62?K.ink:K.white,SEM=['DOM','SEG','TER','QUA','QUI','SEX','SÁB'];let y=47;
+  const pill=(px,py,t,fg,bg)=>{ft(7.5,true);const w=doc.getTextWidth(L(t))+6;F(bg);doc.roundedRect(px,py-3.9,w,5.4,2.7,2.7,'F');T(fg);doc.text(L(t),px+3,py);return w};
+  D.ferEsc.forEach(f=>{
+    const it=f.itens.filter(i=>ids.includes(i.id)),fech=f.modo==='fechado',n=Math.max(1,fech?1:it.length),h=Math.max(32,20+n*10);
+    if(y+h>PH-18){doc.addPage();y=M}
+    F(K.white);S(K.line);doc.setLineWidth(.3);doc.roundedRect(M,y,CW,h,3,3,'FD');
+    F(K.pri);doc.roundedRect(M,y,34,h,3,3,'F');doc.rect(M+20,y,14,h,'F');
+    const [yy,mm,dd]=f.k.split('-').map(Number),cy=y+h/2;
+    T(onp);ft(7.5,true);doc.text(L(SEM[new Date(yy,mm-1,dd).getDay()]),M+17,cy-7.5,{align:'center'});
+    ft(24,true);doc.text(String(dd),M+17,cy+3,{align:'center'});
+    ft(8.5,true);doc.text(L(new Date(yy,mm-1,dd).toLocaleDateString('pt-BR',{month:'short'}).replace('.','').toUpperCase()),M+17,cy+9,{align:'center'});
+    const rx=M+34+8,lab=fech?'Fechado':f.modo==='especial'?'Escala especial':'Escala normal',fg=fech?K.bad:f.modo==='especial'?K.ok:K.gr,bg=fech?K.badb:f.modo==='especial'?K.okb:K.grb;
+    ft(7.5,true);const pw=doc.getTextWidth(L(lab))+6;pill(M+CW-pw-4,y+8,lab,fg,bg);
+    ft(11,true);T(K.ink);let nm=L(f.n);const mw=CW-34-8-pw-12;while(nm.length>1&&doc.getTextWidth(nm)>mw)nm=nm.slice(0,-1);doc.text(nm,rx,y+8);
+    if(fech){ft(10.5,true);T(K.bad);doc.text('Fechado - ninguém trabalha',rx,y+20)}
+    else if(!it.length){ft(10.5,false);T(K.mut);doc.text('Sem escala definida',rx,y+20)}
+    else it.forEach((i,k)=>{
+      const base=y+19+k*10;
+      ft(12,true);T(K.ink);doc.text(L(i.en+' - '+i.sa),rx,base);
+      ft(12,false);let nn=L(i.nome);const m2=CW-34-8-44-34;while(nn.length>1&&doc.getTextWidth(nn)>m2)nn=nn.slice(0,-1);doc.text(nn,rx+44,base);
+      if(difer(it)&&(k===0||k===it.length-1)){const lb=k===0?'Abre':'Fecha';ft(7.5,true);const p2=doc.getTextWidth(lb)+6;pill(M+CW-p2-4,base,lb,k===0?K.ok:K.info,k===0?K.okb:K.infob)}
+    });
+    y+=h+5;
+  });
+  const nn=doc.getNumberOfPages();
+  for(let i=1;i<=nn;i++){doc.setPage(i);S(K.line);doc.setLineWidth(.3);doc.line(M,PH-12,W-M,PH-12);ft(7.5,false);T(K.mut);doc.text('Escala dos feriados',M,PH-7.5);doc.text(L('Página '+i+' de '+nn),W-M,PH-7.5,{align:'right'})}
+  doc.save('Escala_Feriados_'+ym+'.pdf');
+}
+function textoFeriados(ym,ids){
+  const [de,ate]=mesRange(ym),D=relDados(de,ate),L=['ESCALA DOS FERIADOS - '+mesNome(ym).toUpperCase(),''];
+  if(!D.ferEsc.length)L.push('Nenhum feriado neste mês.');
+  D.ferEsc.forEach(f=>{const it=f.itens.filter(i=>ids.includes(i.id));L.push(`${fmt(f.k)} ${DIAS[parse(f.k).getDay()]} - ${f.n}`);
+    if(f.modo==='fechado')L.push('  FECHADO - ninguém trabalha');
+    else{if(!it.length)L.push('  sem escala definida');it.forEach((i,n)=>L.push(`  ${i.en} às ${i.sa} - ${i.nome}${difer(it)?(n===0?' (abre)':n===it.length-1?' (fecha)':''):''}`))}
+    L.push('')});
   return L.join('\n').trim();
 }
 function escolheQuem(acao,label){
