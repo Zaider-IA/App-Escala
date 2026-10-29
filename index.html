@@ -209,7 +209,7 @@ function sheet(title,btns){
   d.querySelectorAll('button').forEach(b=>b.onclick=async()=>{d.close();if(b.dataset.i!=='x')await btns[b.dataset.i][1]()});
 }
 function situ(e,k){
-  const f=S.faltas.find(x=>x.funcionario_id===e.id&&x.data===k),cb=S.faltas.filter(x=>x.cobertura_id===e.id&&x.data===k),t=turnoDia(e,k),md=S.fmodo[k];
+  const f=S.faltas.find(x=>x.funcionario_id===e.id&&x.data===k),cb=S.faltas.filter(x=>x.cobertura_id===e.id&&x.data===k),t=turnoDia(e,k),md=modoFer(k);
   const sc=S.esc.find(x=>x.funcionario_id===e.id&&x.dia_semana===parse(k).getDay());
   let sub,tag='',work=false;
   if(t){sub=`${t.en} às ${t.sa}`;work=true}
@@ -224,7 +224,7 @@ function situ(e,k){
   return {sub,tag,work};
 }
 const rel=(e,k)=>S.faltas.some(f=>f.funcionario_id===e.id&&f.data===k)||!!turnoDia(e,k);
-const banFer=(k,nm,btn)=>{const md=S.fmodo[k],tx=md==='fechado'?' · Fechado':md==='especial'?' · Escala especial':'';return `<div class="ban">Feriado · ${esc(nm)}${tx}${btn?' <button class="ghost sm" id="fer" style="margin-left:8px">Montar escala</button>':''}</div>`};
+const banFer=(k,nm,btn)=>{const tx=S.fmodo[k]==='fechado'?' · Fechado':'';return `<div class="ban">Feriado · ${esc(nm)}${tx}${btn?' <button class="ghost sm" id="fer" style="margin-left:8px">Montar escala</button>':''}</div>`};
 const item=(e,k)=>{const s=situ(e,k);return `<div class="it" data-e="${e.id}"><div class="av">${esc((e.nome[0]||'?').toUpperCase())}</div><div class="grow"><b>${esc(e.nome)}</b><br><small>${s.sub}</small></div>${s.tag}<span class="chv">${ic('chev')}</span></div>`};
 
 // ---------- Início ----------
@@ -263,7 +263,7 @@ function vEscala(){
     return `<div class="it" data-e="${e.id}"><div class="av">${esc((e.nome[0]||'?').toUpperCase())}</div><div class="grow"><b>${esc(e.nome)}</b><br><small>${dd.length} de ${e.dias_semana} dias · ${dd.map(d=>DIAS[d.getDay()]).join(', ')||'nenhum dia escalado'}</small></div><span class="tag ${ok?'ok':'warn'}">${ok?'Completo':'Faltam '+(e.dias_semana-dd.length)}</span></div>`}).join('');
   return `<div class="card" style="padding:10px"><div class="row" style="margin:0"><button class="ghost sm" id="pv">‹</button><b class="grow" style="text-align:center;margin:0">${dias[0].toLocaleDateString('pt-BR',{day:'numeric',month:'short'})} a ${dias[6].toLocaleDateString('pt-BR',{day:'numeric',month:'short'})}</b><button class="ghost sm" id="nx">›</button></div></div>
   <div class="days">${dias.map(d=>{const q=iso(d);return `<button class="dc ${q===k?'on':''}" data-d="${q}">${DIAS[d.getDay()]}<b>${d.getDate()}</b><span style="${H[q]?'':'visibility:hidden'}"></span></button>`}).join('')}</div>
-  <div class="card tint soft t2"><b>${parse(k).toLocaleDateString('pt-BR',{weekday:'long',day:'numeric',month:'long'})}</b>${H[k]?banFer(k,H[k],true):''}${lista.map(e=>item(e,k)).join('')||'<p class="mut">Ninguém escalado neste dia.</p>'}${folga.length?`<p class="mut"><small>De folga: ${folga.map(e=>esc(e.nome)).join(', ')}</small></p>`:''}<div class="row"><button class="ghost grow" id="esd">Escalar neste dia</button><button class="ghost grow" id="sbd">Sábados do mês</button></div></div>
+  <div class="card tint soft t2"><b>${parse(k).toLocaleDateString('pt-BR',{weekday:'long',day:'numeric',month:'long'})}</b>${H[k]?banFer(k,H[k],true):''}${lista.map(e=>item(e,k)).join('')||'<p class="mut">Ninguém escalado neste dia.</p>'}${folga.length&&!H[k]?`<p class="mut"><small>De folga: ${folga.map(e=>esc(e.nome)).join(', ')}</small></p>`:''}<div class="row"><button class="ghost grow" id="esd">Escalar neste dia</button><button class="ghost grow" id="sbd">Sábados do mês</button></div></div>
   ${semana?`<div class="card tint soft t1"><b>Semana · funcionários flexíveis</b>${semana}</div>`:''}`;
 }
 bind.escala=()=>{
@@ -459,27 +459,26 @@ bind.feriados = () => {
 };
 
 // ---------- Escala dos feriados ----------
-async function marcaEspecial(k){if(S.fmErro)return;try{if(S.fmodo[k]!=='especial'){await db.from('feriado_modo').upsert({data:k,modo:'especial'});S.fmodo[k]='especial'}}catch(e){}}
+async function marcaEspecial(k){if(S.fmErro||S.fmodo[k]!=='fechado')return;try{await db.from('feriado_modo').delete().eq('data',k);delete S.fmodo[k]}catch(e){}}
 async function setModo(k,modo){
   if(S.fmErro){alert('Antes de montar a escala dos feriados, rode o arquivo atualizacao3.sql no Supabase (SQL Editor).');return false}
   try{await ck(db.from('feriado_modo').upsert({data:k,modo}))}catch(e){alert(e.message);return false}
   S.fmodo[k]=modo;return true;
 }
 async function voltaNormal(k){
-  if(!confirm('Voltar este feriado para a escala normal? As pessoas escaladas só para este feriado serão removidas.'))return;
+  if(!confirm('Limpar a escala deste feriado? Todos os escalados serão removidos e ele volta a ficar em branco.'))return;
   const ids=S.emps.filter(e=>e.tipo!=='flexivel').map(e=>e.id);
-  try{await ck(db.from('feriado_modo').delete().eq('data',k));if(ids.length)await ck(db.from('escalas_dia').delete().eq('data',k).in('funcionario_id',ids))}catch(e){return alert(e.message)}
+  try{if(!S.fmErro)await ck(db.from('feriado_modo').delete().eq('data',k));if(ids.length)await ck(db.from('escalas_dia').delete().eq('data',k).in('funcionario_id',ids))}catch(e){return alert(e.message)}
   load();
 }
 function feriadoSheet(k){
-  if(S.fmErro)return alert('Antes de montar a escala dos feriados, rode o arquivo atualizacao3.sql no Supabase (SQL Editor).');
   const nm=feriados(+k.slice(0,4))[k]||'Feriado';
   sheet(fmt(k)+' · '+esc(nm),[
     ['Escalar dois turnos (manhã e tarde)',()=>turnosForm(k,true)],
     ['Escalar várias pessoas no mesmo horário',()=>multiForm(k)],
     ['Adicionar ou alterar uma pessoa',()=>diaForm(k,null,false,true)],
     ['Marcar como fechado (ninguém trabalha)',async()=>{if(await setModo(k,'fechado'))load()}],
-    ['Voltar para a escala normal',()=>voltaNormal(k),'red']]);
+    ['Limpar escala do feriado (deixar em branco)',()=>voltaNormal(k),'red']]);
 }
 function multiForm(k){
   const at=S.emps.filter(e=>e.ativo);if(!at.length)return alert('Cadastre funcionários primeiro.');
@@ -499,26 +498,31 @@ function multiForm(k){
 }
 function vFerEscala(){
   const H=feriados(+S.fm.slice(0,4)),lista=Object.entries(H).filter(([k])=>k.startsWith(S.fm)).sort(),at=S.emps.filter(e=>e.ativo);
-  const tg={normal:['gr','Escala normal'],especial:['ok','Escala especial'],fechado:['bad','Fechado']};
+  const tg={vazio:['gr','A definir'],especial:['ok','Escalado'],fechado:['bad','Fechado']};
   return `<div class="card" style="padding:10px"><input type="month" id="fm" value="${S.fm}"></div>
   <div class="row"><button class="grow" id="fpdf">Baixar PDF do mês</button><button class="ghost grow" id="ftxt">Copiar texto</button></div>
-  ${S.fmErro?'<div class="card"><b>Falta uma atualização no banco</b><small>Rode o arquivo atualizacao3.sql no Supabase (SQL Editor) para liberar a escala dos feriados.</small></div>':''}
-  ${lista.map(([k,nm])=>{const md=S.fmodo[k]||'normal',[c,t]=tg[md],itens=md==='fechado'?[]:at.map(e=>({e,t:turnoDia(e,k)})).filter(x=>x.t).sort((a,b)=>a.t.en.localeCompare(b.t.en));
+  ${S.fmErro?'<div class="card"><b>Para usar "Fechado"</b><small>Rode o arquivo atualizacao3.sql no Supabase (SQL Editor). Montar a escala dos feriados já funciona sem isso.</small></div>':''}
+  ${lista.map(([k,nm])=>{const fe=S.fmodo[k]==='fechado',itens=fe?[]:at.map(e=>({e,t:turnoDia(e,k)})).filter(x=>x.t).sort((a,b)=>a.t.en.localeCompare(b.t.en)),md=fe?'fechado':itens.length?'especial':'vazio',[c,t]=tg[md];
     return `<div class="card"><div class="row" style="margin:0"><div class="grow"><b>${fmt(k)} · ${DIAS[parse(k).getDay()]}</b><br><small>${esc(nm)}</small></div><span class="tag ${c}">${t}</span></div>
     ${md==='fechado'?'<p class="mut"><small>Ninguém trabalha neste feriado.</small></p>':itens.map(x=>`<div class="it" data-fk="${k}"><div class="av">${esc((x.e.nome[0]||'?').toUpperCase())}</div><div class="grow"><b>${esc(x.e.nome)}</b><br><small>${x.t.en} às ${x.t.sa} · ${fh(horas(x.t.en,x.t.sa))}</small></div><span class="chv">${ic('chev')}</span></div>`).join('')||'<p class="mut"><small>Ninguém escalado.</small></p>'}
-    ${md==='normal'?'<p class="mut" style="margin:6px 0"><small>Segue a escala fixa de cada um. Toque no botão para definir horários só deste feriado.</small></p>':''}
-    <div class="row"><button class="grow" data-fs="${k}">${md==='normal'?'Montar escala do feriado':'Editar escala do feriado'}</button></div></div>`}).join('')||'<div class="card mut">Nenhum feriado neste mês.</div>'}`;
+    <div class="row"><button class="grow" data-fs="${k}">${md==='vazio'?'Montar escala do feriado':'Editar escala do feriado'}</button></div><div class="row"><button class="ghost grow sm" data-fp="${k}">Baixar PDF deste feriado</button><button class="ghost grow sm" data-ft="${k}">Copiar texto</button></div></div>`}).join('')||'<div class="card mut">Nenhum feriado neste mês.</div>'}`;
 }
 bind.ferescala=()=>{
   $('#fm').onchange=e=>{S.fm=e.target.value||S.fm;render()};
   $('#fpdf').onclick=()=>escolheQuem(ids=>baixarFeriadosPDF(S.fm,ids),'Baixar PDF');
   $('#ftxt').onclick=()=>escolheQuem(async ids=>{const t=textoFeriados(S.fm,ids);try{await navigator.clipboard.writeText(t);alert('Escala copiada. É só colar no WhatsApp.')}catch{prompt('Copie o texto:',t)}},'Copiar');
   document.querySelectorAll('[data-fs],[data-fk]').forEach(b=>b.onclick=()=>feriadoSheet(b.dataset.fs||b.dataset.fk));
+  const todos=()=>{const at=S.emps.filter(e=>e.ativo);return (DS.sabSel||at.filter(e=>e.tipo!=='flexivel').map(e=>e.id)).filter(id=>at.some(e=>e.id===id))};
+  document.querySelectorAll('[data-fp]').forEach(b=>b.onclick=()=>baixarFeriadosPDF(S.fm,todos(),b.dataset.fp));
+  document.querySelectorAll('[data-ft]').forEach(b=>b.onclick=async()=>{const t=textoFeriados(S.fm,todos(),b.dataset.ft);try{await navigator.clipboard.writeText(t);alert('Escala copiada. É só colar no WhatsApp.')}catch{prompt('Copie o texto:',t)}});
 };
 
 // ---------- Relatório (mês, funcionário e período) ----------
+const _fc={};
+function ferMapa(y){const sig=y+'|'+S.extras.map(e=>e.data+e.nome).join(',');if(!_fc[y]||_fc[y].sig!==sig)_fc[y]={sig,m:feriados(y)};return _fc[y].m}
+const modoFer=k=>ferMapa(+k.slice(0,4))[k]?(S.fmodo[k]||'especial'):null;
 function turnoDia(e,k){
-  const md=S.fmodo[k];
+  const md=modoFer(k);
   if(md==='fechado'&&e.tipo!=='flexivel')return null;
   const ov=S.dias.find(x=>x.funcionario_id===e.id&&x.data===k);
   if(ov)return {en:hhmm(ov.entrada),sa:hhmm(ov.saida)};
@@ -551,7 +555,7 @@ function relDados(de,ate,empId){
     return {e,fe,cob,cobH,prev,falt,trab:prev-falt+cobH,dias:dd,sabs:dd.filter(x=>parse(x.k).getDay()===6),
       pendTotal:S.faltas.filter(f=>f.funcionario_id===e.id&&!f.horas_quitadas).reduce((s,f)=>s+ +f.horas_devidas,0),devMes:fe.reduce((s,f)=>s+ +f.horas_devidas,0)};
   });
-  return {de,ate,empId,fm,fer:days.filter(k=>H[k]).map(k=>({k,n:H[k]})),ferEsc:days.filter(k=>H[k]).map(k=>{const modo=S.fmodo[k]||'normal';return {k,n:H[k],modo,itens:modo==='fechado'?[]:emps.map(e=>{const t=turnoDia(e,k);return t&&{id:e.id,nome:e.nome,en:t.en,sa:t.sa,h:horas(t.en,t.sa),falta:fm0.some(f=>f.funcionario_id===e.id&&f.data===k)}}).filter(Boolean).sort((a,b)=>a.en.localeCompare(b.en))}}),sab,func,
+  return {de,ate,empId,fm,fer:days.filter(k=>H[k]).map(k=>({k,n:H[k]})),ferEsc:days.filter(k=>H[k]).map(k=>{const fe=S.fmodo[k]==='fechado',itens=fe?[]:emps.map(e=>{const t=turnoDia(e,k);return t&&{id:e.id,nome:e.nome,en:t.en,sa:t.sa,h:horas(t.en,t.sa),falta:fm0.some(f=>f.funcionario_id===e.id&&f.data===k)}}).filter(Boolean).sort((a,b)=>a.en.localeCompare(b.en));return {k,n:H[k],modo:fe?'fechado':itens.length?'especial':'vazio',itens}}),sab,func,
     tot:{faltas:pr.filter(f=>!f.atestado).length,atest:pr.filter(f=>f.atestado).length,cob:empId?fm.filter(f=>f.cobertura_id===empId).length:fm.filter(f=>f.cobertura_id).length,
       pend:S.faltas.filter(f=>!f.horas_quitadas&&(!empId||f.funcionario_id===empId)).reduce((s,f)=>s+ +f.horas_devidas,0)}};
 }
@@ -577,13 +581,13 @@ function detalhe(x){
   if(x.devMes>0||x.pendTotal>0)L.push(kv('Horas devendo',`${fh(x.devMes)} no período<br>${fh(x.pendTotal)} pendentes no total`));
   return `<details class="card"><summary><div class="av">${esc((e.nome[0]||'?').toUpperCase())}</div><div class="grow"><b>${esc(e.nome)}</b><br><small>${fh(x.trab)} trabalhadas · ${x.fe.length} falta(s)</small></div>${ic('chev')}</summary>${L.join('')}</details>`;
 }
-const notaRel=D=>`<p class="mut"><small>Horas contadas da entrada até a saída, sem descontar intervalo. Feriados seguem a escala definida para cada um (normal, especial ou fechado).</small></p>`;
+const notaRel=D=>`<p class="mut"><small>Horas contadas da entrada até a saída, sem descontar intervalo. Feriados só contam para quem foi escalado neles.</small></p>`;
 function faltasCard(D){
   return `<div class="card"><b>Faltas e coberturas</b>${D.fm.map(f=>`<div style="padding:10px 0;border-top:1px solid var(--line)"><div class="row" style="margin:0"><b class="grow">${esc(nome(f.funcionario_id))} · ${fmt(f.data)}</b><span class="tag ${f.atestado?'ok':'bad'}">${f.atestado?'Com atestado':'Sem atestado'}</span></div><small>${esc(f.motivo)}${+f.horas_devidas>0?` · deve ${fh(+f.horas_devidas)} (${f.horas_quitadas?'quitadas':'pendentes'})`:''}${f.cobertura_id?` · coberto por ${esc(nome(f.cobertura_id))}`:' · sem cobertura'}</small>${f.observacao?`<br><small>${esc(f.observacao)}</small>`:''}${(f.anexos||[]).length?`<br><button class="ghost sm" data-ax="${f.id}" style="margin-top:6px">Ver anexos (${f.anexos.length})</button>`:''}</div>`).join('')||'<p class="mut">Nenhuma falta neste período.</p>'}</div>`;
 }
 function ferCard(D){
   if(!D.ferEsc||!D.ferEsc.length)return '';
-  const tg={normal:['gr','Escala normal'],especial:['ok','Escala especial'],fechado:['bad','Fechado']};
+  const tg={vazio:['gr','A definir'],especial:['ok','Escalado'],fechado:['bad','Fechado']};
   return `<div class="card"><b>Feriados</b>${D.ferEsc.map(f=>{const [c,t]=tg[f.modo];return `<div style="padding:10px 0;border-top:1px solid var(--line)"><div class="row" style="margin:0"><b class="grow">${fmt(f.k)} · ${esc(f.n)}</b><span class="tag ${c}">${t}</span></div>${f.modo==='fechado'?'<small class="mut">Ninguém trabalha.</small>':f.itens.map(i=>kv(esc(i.nome)+(i.falta?' · faltou':''),`${i.en}–${i.sa} · ${fh(i.h)}`)).join('')||'<small class="mut">Ninguém escalado.</small>'}</div>`}).join('')}</div>`;
 }
 function corpoEquipe(D){
@@ -609,7 +613,7 @@ function linhasRel(D){
   }else{
     L.push(`Faltas sem atestado: ${t.faltas} | Atestados: ${t.atest} | Coberturas: ${t.cob} | Horas devidas pendentes: ${fh(t.pend)}`,'','## SÁBADOS');
     D.sab.forEach(s=>L.push(`${fmt(s.k)}: `+(s.itens.map(i=>`${i.nome} ${i.en}-${i.sa} (${fh(i.h)})${i.falta?' FALTOU':''}`).join('; ')||'ninguém escalado')));
-    if(D.ferEsc&&D.ferEsc.length){L.push('','## FERIADOS');D.ferEsc.forEach(f=>L.push(`${fmt(f.k)} ${f.n} (${f.modo==='fechado'?'fechado':f.modo==='especial'?'escala especial':'escala normal'}): `+(f.modo==='fechado'?'ninguém trabalha':(f.itens.map(i=>`${i.nome} ${i.en}-${i.sa} (${fh(i.h)})`).join('; ')||'ninguém escalado'))))}
+    if(D.ferEsc&&D.ferEsc.length){L.push('','## FERIADOS');D.ferEsc.forEach(f=>L.push(`${fmt(f.k)} ${f.n} (${f.modo==='fechado'?'fechado':f.modo==='especial'?'escalado':'a definir'}): `+(f.modo==='fechado'?'ninguém trabalha':(f.itens.map(i=>`${i.nome} ${i.en}-${i.sa} (${fh(i.h)})`).join('; ')||'ninguém escalado'))))}
   }
   L.push('','## FALTAS E COBERTURAS');
   if(!D.fm.length)L.push('Nenhuma falta no período.');
@@ -680,16 +684,18 @@ function textoSabados(ym,ids){
   D.sab.forEach(s=>{const it=s.itens.filter(i=>ids.includes(i.id));L.push('Sábado '+dm(s.k));if(!it.length)L.push('  sem escala definida');it.forEach((i,n)=>L.push(`  ${i.en} às ${i.sa} - ${i.nome}${difer(it)?(n===0?' (abre)':n===it.length-1?' (fecha)':''):''}`));L.push('')});
   return L.join('\n').trim();
 }
-function baixarFeriadosPDF(ym,ids){
+function baixarFeriadosPDF(ym,ids,only){
   const J=window.jspdf&&window.jspdf.jsPDF;
   if(!J){alert('Não consegui carregar o gerador de PDF (precisa de internet). Tente de novo com internet.');return}
   const [de,ate]=mesRange(ym),D=relDados(de,ate);
-  if(!D.ferEsc.length)return alert('Não há feriados neste mês.');
+  const lista=D.ferEsc.filter(f=>!only||f.k===only);
+  if(!lista.length)return alert('Não há feriados neste mês.');
+  if(only&&lista[0].modo!=='fechado'&&!lista[0].itens.some(i=>ids.includes(i.id)))return alert('Esse feriado ainda não tem ninguém escalado (entre as pessoas escolhidas para os PDFs). Monte a escala antes de baixar.');
   const doc=new J({unit:'mm',format:'a4'}),c=pdfCtx(doc),{K,F,T,S,ft,L,W,PH,M,CW}=c;
-  cabecalhoPDF(doc,c,'ESCALA DOS FERIADOS',mesNome(ym),'Gerado em '+new Date().toLocaleDateString('pt-BR'));
+  cabecalhoPDF(doc,c,only?'ESCALA DO FERIADO':'ESCALA DOS FERIADOS',only?lista[0].n:mesNome(ym),(only?fmt(only)+'   ·   ':'')+'Gerado em '+new Date().toLocaleDateString('pt-BR'));
   const onp=lum(DS.cores.pri)>.62?K.ink:K.white,SEM=['DOM','SEG','TER','QUA','QUI','SEX','SÁB'];let y=47;
   const pill=(px,py,t,fg,bg)=>{ft(7.5,true);const w=doc.getTextWidth(L(t))+6;F(bg);doc.roundedRect(px,py-3.9,w,5.4,2.7,2.7,'F');T(fg);doc.text(L(t),px+3,py);return w};
-  D.ferEsc.forEach(f=>{
+  lista.forEach(f=>{
     const it=f.itens.filter(i=>ids.includes(i.id)),fech=f.modo==='fechado',n=Math.max(1,fech?1:it.length),h=Math.max(32,20+n*10);
     if(y+h>PH-18){doc.addPage();y=M}
     F(K.white);S(K.line);doc.setLineWidth(.3);doc.roundedRect(M,y,CW,h,3,3,'FD');
@@ -698,7 +704,7 @@ function baixarFeriadosPDF(ym,ids){
     T(onp);ft(7.5,true);doc.text(L(SEM[new Date(yy,mm-1,dd).getDay()]),M+17,cy-7.5,{align:'center'});
     ft(24,true);doc.text(String(dd),M+17,cy+3,{align:'center'});
     ft(8.5,true);doc.text(L(new Date(yy,mm-1,dd).toLocaleDateString('pt-BR',{month:'short'}).replace('.','').toUpperCase()),M+17,cy+9,{align:'center'});
-    const rx=M+34+8,lab=fech?'Fechado':f.modo==='especial'?'Escala especial':'Escala normal',fg=fech?K.bad:f.modo==='especial'?K.ok:K.gr,bg=fech?K.badb:f.modo==='especial'?K.okb:K.grb;
+    const rx=M+34+8,lab=fech?'Fechado':f.modo==='especial'?'Escalado':'A definir',fg=fech?K.bad:f.modo==='especial'?K.ok:K.gr,bg=fech?K.badb:f.modo==='especial'?K.okb:K.grb;
     ft(7.5,true);const pw=doc.getTextWidth(L(lab))+6;pill(M+CW-pw-4,y+8,lab,fg,bg);
     ft(11,true);T(K.ink);let nm=L(f.n);const mw=CW-34-8-pw-12;while(nm.length>1&&doc.getTextWidth(nm)>mw)nm=nm.slice(0,-1);doc.text(nm,rx,y+8);
     if(fech){ft(10.5,true);T(K.bad);doc.text('Fechado - ninguém trabalha',rx,y+20)}
@@ -713,12 +719,12 @@ function baixarFeriadosPDF(ym,ids){
   });
   const nn=doc.getNumberOfPages();
   for(let i=1;i<=nn;i++){doc.setPage(i);S(K.line);doc.setLineWidth(.3);doc.line(M,PH-12,W-M,PH-12);ft(7.5,false);T(K.mut);doc.text('Escala dos feriados',M,PH-7.5);doc.text(L('Página '+i+' de '+nn),W-M,PH-7.5,{align:'right'})}
-  doc.save('Escala_Feriados_'+ym+'.pdf');
+  doc.save(only?'Escala_Feriado_'+only+'.pdf':'Escala_Feriados_'+ym+'.pdf');
 }
-function textoFeriados(ym,ids){
-  const [de,ate]=mesRange(ym),D=relDados(de,ate),L=['ESCALA DOS FERIADOS - '+mesNome(ym).toUpperCase(),''];
+function textoFeriados(ym,ids,only){
+  const [de,ate]=mesRange(ym),D=relDados(de,ate),L=[only?'ESCALA DO FERIADO':'ESCALA DOS FERIADOS - '+mesNome(ym).toUpperCase(),''];
   if(!D.ferEsc.length)L.push('Nenhum feriado neste mês.');
-  D.ferEsc.forEach(f=>{const it=f.itens.filter(i=>ids.includes(i.id));L.push(`${fmt(f.k)} ${DIAS[parse(f.k).getDay()]} - ${f.n}`);
+  D.ferEsc.filter(f=>!only||f.k===only).forEach(f=>{const it=f.itens.filter(i=>ids.includes(i.id));L.push(`${fmt(f.k)} ${DIAS[parse(f.k).getDay()]} - ${f.n}`);
     if(f.modo==='fechado')L.push('  FECHADO - ninguém trabalha');
     else{if(!it.length)L.push('  sem escala definida');it.forEach((i,n)=>L.push(`  ${i.en} às ${i.sa} - ${i.nome}${difer(it)?(n===0?' (abre)':n===it.length-1?' (fecha)':''):''}`))}
     L.push('')});
@@ -792,7 +798,7 @@ function baixarPDF(D){
     secao('Sábados');
     const rows=[];D.sab.forEach(s=>{if(!s.itens.length)rows.push({top:true,c:[fmt(s.k),{t:'Ninguém escalado',k:K.mut},'','']});else s.itens.forEach((i,n)=>rows.push({top:n===0,c:[n===0?{t:fmt(s.k),b:true}:'',{t:i.nome+(i.falta?'  (faltou)':''),k:i.falta?K.bad:K.ink,b:i.falta},i.en+' - '+i.sa,{t:fh(i.h),b:true}]}))});
     tabela([{t:'Sábado',w:34},{t:'Funcionário',w:72},{t:'Horário',w:46},{t:'Horas',w:30,al:'r'}],rows.length?rows:[{c:['','Nenhum sábado no período.','','']}]);
-    if(D.ferEsc.length){secao('Feriados');const fr=[];D.ferEsc.forEach(f=>{const lb=f.modo==='fechado'?' (fechado)':f.modo==='especial'?' (especial)':'';
+    if(D.ferEsc.length){secao('Feriados');const fr=[];D.ferEsc.forEach(f=>{const lb=f.modo==='fechado'?' (fechado)':f.modo==='vazio'?' (a definir)':'';
       if(f.modo==='fechado'||!f.itens.length)fr.push({top:true,c:[{t:fmt(f.k),b:true},f.n+lb,{t:f.modo==='fechado'?'Ninguém trabalha':'Ninguém escalado',k:f.modo==='fechado'?K.bad:K.mut},'','']});
       else f.itens.forEach((i,n)=>fr.push({top:n===0,c:[n===0?{t:fmt(f.k),b:true}:'',n===0?f.n+lb:'',{t:i.nome+(i.falta?'  (faltou)':''),k:i.falta?K.bad:K.ink,b:i.falta},i.en+' - '+i.sa,{t:fh(i.h),b:true}]}))});
       tabela([{t:'Data',w:26},{t:'Feriado',w:50},{t:'Funcionário',w:46},{t:'Horário',w:34},{t:'Horas',w:26,al:'r'}],fr)}
@@ -804,7 +810,7 @@ function baixarPDF(D){
     tabela([{t:'Funcionário',w:44},{t:'Previstas',w:24,al:'r'},{t:'Faltas',w:28,al:'r'},{t:'Cobertas',w:24,al:'r'},{t:'Trabalhadas',w:28,al:'r'},{t:'Dias',w:14,al:'r'},{t:'Devendo',w:20,al:'r'}],
       D.func.map(y2=>({c:[{t:y2.e.nome,b:true},fh(y2.prev),y2.fe.length?{t:y2.fe.length+' (-'+fh(y2.falt)+')',k:K.bad,b:true}:'-',y2.cobH>0?{t:'+'+fh(y2.cobH),k:K.ok,b:true}:'-',{t:fh(y2.trab),b:true},String(y2.dias.length),y2.pendTotal>0?{t:fh(y2.pendTotal),k:K.warn,b:true}:'-']})));
   }
-  ft(7.5,false);T(K.mut);const nota=doc.splitTextToSize(L('Horas contadas da entrada até a saída, sem descontar intervalo. Feriados seguem a escala definida para cada um (normal, especial ou fechado).'),CW);ensure(nota.length*3.6+2);nota.forEach((t,i)=>doc.text(t,M,y+i*3.6));
+  ft(7.5,false);T(K.mut);const nota=doc.splitTextToSize(L('Horas contadas da entrada até a saída, sem descontar intervalo. Feriados só contam para quem foi escalado neles.'),CW);ensure(nota.length*3.6+2);nota.forEach((t,i)=>doc.text(t,M,y+i*3.6));
   const n=doc.getNumberOfPages();
   for(let i=1;i<=n;i++){doc.setPage(i);S(K.line);doc.setLineWidth(.3);doc.line(M,PH-12,W-M,PH-12);ft(7.5,false);T(K.mut);doc.text('Escala da Equipe',M,PH-7.5);doc.text(L('Página '+i+' de '+n),W-M,PH-7.5,{align:'right'})}
   doc.save(nomeArq(D)+'.pdf');
