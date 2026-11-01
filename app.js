@@ -94,7 +94,7 @@ function relDados(de,ate,empId){
       saldo:saldoDe(e.id),movs:S.saldo.filter(x=>x.funcionario_id===e.id&&x.data>=de&&x.data<=ate).sort((a,b)=>a.data.localeCompare(b.data))};
   });
   const mesInteiro=de===de.slice(0,7)+'-01'&&ate===mesRange(de.slice(0,7))[1],chave=(!empId&&mesInteiro)?'rel:'+de.slice(0,7):`relp:${empId||'todos'}:${de}:${ate}`;
-  return {de,ate,empId,chave,nota:nota(chave),fm,fer:days.filter(k=>H[k]).map(k=>({k,n:H[k]})),ferEsc:days.filter(k=>H[k]).map(k=>{const fe=S.fmodo[k]==='fechado',itens=fe?[]:emps.map(e=>{const t=turnoDia(e,k);return t&&{id:e.id,nome:e.nome,en:t.en,sa:t.sa,h:horas(t.en,t.sa),falta:fm0.some(f=>f.funcionario_id===e.id&&f.data===k)}}).filter(Boolean).sort((a,b)=>a.en.localeCompare(b.en));return {k,n:H[k],modo:fe?'fechado':itens.length?'especial':'vazio',itens}}),sab,func,
+  return {de,ate,empId,chave,nota:nota(chave),fm,pendL:S.faltas.filter(f=>+f.horas_devidas>0&&!f.horas_quitadas&&(!empId||f.funcionario_id===empId)).sort((a,b)=>a.data.localeCompare(b.data)),fer:days.filter(k=>H[k]).map(k=>({k,n:H[k]})),ferEsc:days.filter(k=>H[k]).map(k=>{const fe=S.fmodo[k]==='fechado',itens=fe?[]:emps.map(e=>{const t=turnoDia(e,k);return t&&{id:e.id,nome:e.nome,en:t.en,sa:t.sa,h:horas(t.en,t.sa),falta:fm0.some(f=>f.funcionario_id===e.id&&f.data===k)}}).filter(Boolean).sort((a,b)=>a.en.localeCompare(b.en));return {k,n:H[k],modo:fe?'fechado':itens.length?'especial':'vazio',itens}}),sab,func,
     tot:{faltas:pr.filter(f=>!f.atestado).length,atest:pr.filter(f=>f.atestado).length,cob:empId?fm.filter(f=>f.cobertura_id===empId).length:fm.filter(f=>f.cobertura_id).length,
       pend:S.faltas.filter(f=>!f.horas_quitadas&&(!empId||f.funcionario_id===empId)).reduce((s,f)=>s+ +f.horas_devidas,0)}};
 }
@@ -707,6 +707,10 @@ const notaRel=D=>`<p class="mut"><small>Horas contadas da entrada até a saída,
 function faltasCard(D){
   return `<div class="card"><b>Faltas e coberturas</b>${D.fm.map(f=>`<div style="padding:10px 0;border-top:1px solid var(--line)"><div class="row" style="margin:0"><b class="grow">${esc(nome(f.funcionario_id))} · ${fmt(f.data)}</b><span class="tag ${f.atestado?'ok':'bad'}">${f.atestado?'Com atestado':'Sem atestado'}</span></div><small>${esc(f.motivo)}${+f.horas_devidas>0?` · deve ${fh(+f.horas_devidas)} (${f.horas_quitadas?'quitadas':'pendentes'})`:''}${f.cobertura_id?` · coberto por ${esc(nome(f.cobertura_id))}`:' · sem cobertura'}</small>${f.observacao?`<br><small>${esc(f.observacao)}</small>`:''}${(f.anexos||[]).length?`<br><button class="ghost sm" data-ax="${f.id}" style="margin-top:6px">Ver anexos (${f.anexos.length})</button>`:''}</div>`).join('')||'<p class="mut">Nenhuma falta neste período.</p>'}</div>`;
 }
+function pendCard(D){
+  if(!D.pendL||!D.pendL.length)return '';
+  return `<div class="card"><b>Horas devidas pendentes</b><p class="mut" style="margin:2px 0 0"><small>De qualquer mês, até serem marcadas como quitadas.</small></p>${D.pendL.map(f=>`<div style="padding:10px 0;border-top:1px solid var(--line)"><div class="row" style="margin:0"><b class="grow">${esc(nome(f.funcionario_id))}</b><span class="tag warn">Deve ${fh(+f.horas_devidas)}</span></div><small>${fmt(f.data)} - ${esc(f.motivo)}${f.cobertura_id?`<br>Coberto por ${esc(nome(f.cobertura_id))}`:'<br>Sem cobertura'}</small>${f.observacao?`<br><small>${esc(f.observacao)}</small>`:''}</div>`).join('')}</div>`;
+}
 function ferCard(D){
   if(!D.ferEsc||!D.ferEsc.length)return '';
   const tg={vazio:['gr','A definir'],especial:['ok','Escalado'],fechado:['bad','Fechado']};
@@ -717,14 +721,14 @@ const saldoCard=x=>`<div class="card"><b>Saldo de folgas</b>${x.movs.map(m=>kv(`
 function corpoEquipe(D){
   return `<div class="stats" style="grid-template-columns:repeat(2,1fr)"><div class="stat tint t4"><b>${D.tot.faltas}</b>faltas sem atestado</div><div class="stat tint t1"><b>${D.tot.atest}</b>atestados</div><div class="stat tint t2"><b>${D.tot.cob}</b>coberturas</div><div class="stat tint t3"><b>${fh(D.tot.pend)}</b>horas devidas pendentes</div></div>
   <div class="card"><b>Sábados</b>${D.sab.map(s=>`<div style="padding:10px 0;border-top:1px solid var(--line)"><b>${fmt(s.k)}</b>${s.itens.map(i=>kv(esc(i.nome)+(i.falta?' · faltou':''),`${i.en}–${i.sa} · ${fh(i.h)}`)).join('')||'<br><small class="mut">Ninguém escalado.</small>'}</div>`).join('')||'<p class="mut">Nenhum sábado neste período.</p>'}</div>
-  ${ferCard(D)}${faltasCard(D)}<b style="display:block;margin:4px 6px 8px">Por funcionário</b>${D.func.map(detalhe).join('')||'<div class="card mut">Nenhum funcionário.</div>'}${notaRel(D)}`;
+  ${ferCard(D)}${faltasCard(D)}${pendCard(D)}<b style="display:block;margin:4px 6px 8px">Por funcionário</b>${D.func.map(detalhe).join('')||'<div class="card mut">Nenhum funcionário.</div>'}${notaRel(D)}`;
 }
 function corpoFunc(D){
   const x=D.func[0];if(!x)return '<div class="card mut">Sem dados deste funcionário no período.</div>';
   const rows=diaria(x);
   return `<div class="stats" style="grid-template-columns:repeat(2,1fr)"><div class="stat tint t1"><b>${diasTrab(x)}</b>dias trabalhados</div><div class="stat tint t2"><b>${fh(x.trab)}</b>horas trabalhadas</div><div class="stat tint t4"><b>${x.fe.length}</b>faltas</div><div class="stat tint t3"><b>${fh(x.pendTotal)}</b>horas devendo</div></div>
   <div class="card tint soft t2"><b>${esc(x.e.nome)} · dia a dia</b>${rows.map(r=>kv(`${dm(r.k)} ${DIAS[parse(r.k).getDay()]}`,esc(r.txt))).join('')||'<p class="mut">Nenhum dia neste período.</p>'}${kv('Total',`${diasTrab(x)} dias · ${fh(x.trab)}`)}</div>
-  ${(x.saldo!==0||x.movs.length)?saldoCard(x):''}${D.fm.length?faltasCard(D):''}${notaRel(D)}`;
+  ${(x.saldo!==0||x.movs.length)?saldoCard(x):''}${D.fm.length?faltasCard(D):''}${pendCard(D)}${notaRel(D)}`;
 }
 const nomeArq=D=>{const x=D.empId&&D.func[0];return `Relatorio_${slug(x?x.e.nome:'equipe')}_${D.de}_a_${D.ate}`};
 function escolheQuem(acao,label){
@@ -793,6 +797,7 @@ function linhasRel(D){
   L.push('','## FALTAS E COBERTURAS');
   if(!D.fm.length)L.push('Nenhuma falta no período.');
   D.fm.forEach(f=>L.push(`${fmt(f.data)} — ${nome(f.funcionario_id)}: ${f.motivo}${f.atestado?' (com atestado)':' (sem atestado)'}${+f.horas_devidas>0?`, deve ${fh(+f.horas_devidas)}${f.horas_quitadas?' (quitadas)':' (pendentes)'}`:''}${f.cobertura_id?`, coberto por ${nome(f.cobertura_id)}`:', sem cobertura'}${f.observacao?` — ${f.observacao}`:''}`));
+  if(D.pendL&&D.pendL.length){L.push('','## HORAS DEVIDAS PENDENTES');D.pendL.forEach(f=>{L.push(nome(f.funcionario_id),`${fmt(f.data)} - ${f.motivo}`,f.cobertura_id?`Coberto por ${nome(f.cobertura_id)}`:'Sem cobertura',`Deve ${fh(+f.horas_devidas)}`);if(f.observacao)L.push(f.observacao);L.push('')})}
   if(!D.empId){L.push('','## POR FUNCIONÁRIO');D.func.forEach(y=>L.push(`${y.e.nome}: ${fh(y.trab)} trabalhadas (previstas ${fh(y.prev)}${y.falt>0?`, -${fh(y.falt)} por faltas`:''}${y.cobH>0?`, +${fh(y.cobH)} por coberturas`:''}) | ${y.dias.length} dias | ${y.fe.length} falta(s) | devendo ${fh(y.pendTotal)}`))}
   const sd=D.func.filter(y=>y.saldo!==0||y.movs.length);
   if(sd.length){L.push('','## SALDO DE FOLGAS');sd.forEach(y=>{L.push(`${y.e.nome}: saldo ${fd(y.saldo)}`);y.movs.forEach(m=>L.push(`  ${fmt(m.data)} ${m.tipo==='credito'?'+':'-'}${fn(+m.dias)}${m.anotacao?' - '+m.anotacao:''}`))})}
@@ -947,15 +952,15 @@ function baixarPDF(D){
         doc.text(t,col.al==='r'?cx+col.w-3:cx+3,y+5,{align:col.al==='r'?'right':'left'});cx+=col.w});
       y+=rh});
     S(K.line);doc.setLineWidth(.3);doc.line(M,y,M+CW,y);y+=9};
-  const cartoes=fm=>fm.forEach(f=>{
-    ft(8,false);const obs=f.observacao?doc.splitTextToSize(L(f.observacao),CW-14):[],h=23+obs.length*3.8+(obs.length?1.5:0),cor=f.atestado?K.ok:K.bad;
+  const cartoes=(fm,pend)=>fm.forEach(f=>{
+    ft(8,false);const obs=f.observacao?doc.splitTextToSize(L(f.observacao),CW-14):[],h=23+obs.length*3.8+(obs.length?1.5:0),cor=pend?K.warn:f.atestado?K.ok:K.bad;
     ensure(h+4);F(K.white);S(K.line);doc.setLineWidth(.3);doc.roundedRect(M,y,CW,h,2.5,2.5,'FD');F(cor);doc.roundedRect(M,y,2.8,h,1.4,1.4,'F');
     ft(10.5,true);T(K.ink);doc.text(L(nome(f.funcionario_id)),M+7,y+6.5);
-    ft(7.5,true);const lab=f.atestado?'Com atestado':'Sem atestado',pw=doc.getTextWidth(L(lab))+6;pill(M+CW-pw-4,y+6.5,lab,cor,f.atestado?K.okb:K.badb);
+    ft(7.5,true);const lab=pend?'Deve '+fh(+f.horas_devidas):f.atestado?'Com atestado':'Sem atestado',pw=doc.getTextWidth(L(lab))+6;pill(M+CW-pw-4,y+6.5,lab,cor,pend?K.warnb:f.atestado?K.okb:K.badb);
     ft(8.5,false);T(K.mut);doc.text(L(fmt(f.data)+'   ·   '+f.motivo),M+7,y+12.2);
     let px=M+7;const py=y+18.6;
     px+=pill(px,py,f.cobertura_id?'Coberto por '+nome(f.cobertura_id):'Sem cobertura',f.cobertura_id?K.ok:K.gr,f.cobertura_id?K.okb:K.grb)+2;
-    if(+f.horas_devidas>0)px+=pill(px,py,'Deve '+fh(+f.horas_devidas)+(f.horas_quitadas?' (quitadas)':' (pendentes)'),K.warn,K.warnb)+2;
+    if(+f.horas_devidas>0&&!pend)px+=pill(px,py,'Deve '+fh(+f.horas_devidas)+(f.horas_quitadas?' (quitadas)':' (pendentes)'),K.warn,K.warnb)+2;
     if((f.anexos||[]).length)pill(px,py,f.anexos.length+' anexo(s)',K.info,K.infob);
     if(obs.length){ft(8,false);T(K.mut);obs.forEach((t,i)=>doc.text(t,M+7,y+25.2+i*3.8))}
     y+=h+4});
@@ -979,6 +984,7 @@ function baixarPDF(D){
   }
   secao('Faltas e coberturas');
   if(!D.fm.length){ft(9.5,false);T(K.mut);doc.text('Nenhuma falta neste período.',M,y);y+=10}else cartoes(D.fm);
+  if(D.pendL&&D.pendL.length){secao('Horas devidas pendentes');ft(8,false);T(K.mut);doc.text(L('De qualquer mês, até serem marcadas como quitadas.'),M,y);y+=6;cartoes(D.pendL,true)}
   if(!D.empId){
     secao('Por funcionário');
     tabela([{t:'Funcionário',w:44},{t:'Previstas',w:24,al:'r'},{t:'Faltas',w:28,al:'r'},{t:'Cobertas',w:24,al:'r'},{t:'Trabalhadas',w:28,al:'r'},{t:'Dias',w:14,al:'r'},{t:'Devendo',w:20,al:'r'}],
