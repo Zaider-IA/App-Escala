@@ -1,5 +1,6 @@
 /* ===== js/base.js ===== */
 /* Base: conexão, estado, utilitários de data/texto, ícones e cálculo dos feriados */
+const APP_VERSAO = '8 · 06/11/2026';
 const db = supabase.createClient(CFG.url, CFG.key);
 const $ = s => document.querySelector(s);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -12,7 +13,7 @@ const fmt = s => parse(s).toLocaleDateString('pt-BR');
 const monday = d => { const x = new Date(d); x.setDate(x.getDate() - (x.getDay()+6)%7); x.setHours(0,0,0,0); return x; };
 const ck = async q => { const r = await q; if (r.error) throw r.error; return r; };
 const hhmm = t => (t||'').slice(0,5);
-let S = { tab:'inicio', dias:[], saldo:[], notas:{}, v4Erro:false, hist:[], histOk:false, sf:'', dsOk:false, fmodo:{}, fmErro:false, fm:iso(new Date()).slice(0,7), sm:iso(new Date()).slice(0,7), emps:[], esc:[], faltas:[], extras:[], day:iso(new Date()), month:iso(new Date()).slice(0,7), year:new Date().getFullYear(), verInativos:false };
+let S = { tab:'inicio', pagH:[], v5Erro:false, dias:[], saldo:[], notas:{}, v4Erro:false, hist:[], histOk:false, sf:'', dsOk:false, fmodo:{}, fmErro:false, fm:iso(new Date()).slice(0,7), sm:iso(new Date()).slice(0,7), emps:[], esc:[], faltas:[], extras:[], day:iso(new Date()), month:iso(new Date()).slice(0,7), year:new Date().getFullYear(), verInativos:false };
 function pascoa(y){const a=y%19,b=Math.floor(y/100),c=y%100,d=Math.floor(b/4),e=b%4,f=Math.floor((b+8)/25),g=Math.floor((b-f+1)/3),h=(19*a+b-d-g+15)%30,i=Math.floor(c/4),k=c%4,l=(32+2*e+2*i-h-k)%7,m=Math.floor((a+11*h+22*l)/451),mes=Math.floor((h+l-7*m+114)/31),dia=((h+l-7*m+114)%31)+1;return new Date(y,mes-1,dia);}
 function feriadosAno(y){
   const m = {}, add = (d,n) => m[iso(d)] = n, off = (d,n) => { const x=new Date(d); x.setDate(x.getDate()+n); return x; };
@@ -90,13 +91,13 @@ function relDados(de,ate,empId){
     const prev=dd.reduce((s,x)=>s+horas(x.t.en,x.t.sa),0),falt=fe.reduce((s,f)=>s+horasPrev(e,f.data),0);
     const cob=ce.map(f=>{const q=S.emps.find(x=>x.id===f.funcionario_id);return {k:f.data,quem:q?q.nome:'—',h:q?horasPrev(q,f.data):0}}),cobH=cob.reduce((s,c)=>s+c.h,0);
     return {e,fe,cob,cobH,prev,falt,trab:prev-falt+cobH,dias:dd,sabs:dd.filter(x=>parse(x.k).getDay()===6),
-      pendTotal:S.faltas.filter(f=>f.funcionario_id===e.id&&!f.horas_quitadas).reduce((s,f)=>s+ +f.horas_devidas,0),devMes:fe.reduce((s,f)=>s+ +f.horas_devidas,0),
+      pendTotal:pendSaldo(e.id),devMes:fe.reduce((s,f)=>s+ +f.horas_devidas,0),
       saldo:saldoDe(e.id),movs:S.saldo.filter(x=>x.funcionario_id===e.id&&x.data>=de&&x.data<=ate).sort((a,b)=>a.data.localeCompare(b.data))};
   });
   const mesInteiro=de===de.slice(0,7)+'-01'&&ate===mesRange(de.slice(0,7))[1],chave=(!empId&&mesInteiro)?'rel:'+de.slice(0,7):`relp:${empId||'todos'}:${de}:${ate}`;
-  return {de,ate,empId,chave,nota:nota(chave),fm,pendL:S.faltas.filter(f=>+f.horas_devidas>0&&!f.horas_quitadas&&(!empId||f.funcionario_id===empId)).sort((a,b)=>a.data.localeCompare(b.data)),fer:days.filter(k=>H[k]).map(k=>({k,n:H[k]})),ferEsc:days.filter(k=>H[k]).map(k=>{const fe=S.fmodo[k]==='fechado',itens=fe?[]:emps.map(e=>{const t=turnoDia(e,k);return t&&{id:e.id,nome:e.nome,en:t.en,sa:t.sa,h:horas(t.en,t.sa),falta:fm0.some(f=>f.funcionario_id===e.id&&f.data===k)}}).filter(Boolean).sort((a,b)=>a.en.localeCompare(b.en));return {k,n:H[k],modo:fe?'fechado':itens.length?'especial':'vazio',itens}}),sab,func,
+  return {de,ate,empId,chave,nota:nota(chave),fm,pendL:pendFaltas(empId),pagL:(S.pagH||[]).filter(p=>p.data>=de&&p.data<=ate&&(!empId||p.funcionario_id===empId)).sort((a,b)=>a.data.localeCompare(b.data)),fer:days.filter(k=>H[k]).map(k=>({k,n:H[k]})),ferEsc:days.filter(k=>H[k]).map(k=>{const fe=S.fmodo[k]==='fechado',itens=fe?[]:emps.map(e=>{const t=turnoDia(e,k);return t&&{id:e.id,nome:e.nome,en:t.en,sa:t.sa,h:horas(t.en,t.sa),falta:fm0.some(f=>f.funcionario_id===e.id&&f.data===k)}}).filter(Boolean).sort((a,b)=>a.en.localeCompare(b.en));return {k,n:H[k],modo:fe?'fechado':itens.length?'especial':'vazio',itens}}),sab,func,
     tot:{faltas:pr.filter(f=>!f.atestado).length,atest:pr.filter(f=>f.atestado).length,cob:empId?fm.filter(f=>f.cobertura_id===empId).length:fm.filter(f=>f.cobertura_id).length,
-      pend:S.faltas.filter(f=>!f.horas_quitadas&&(!empId||f.funcionario_id===empId)).reduce((s,f)=>s+ +f.horas_devidas,0)}};
+      pend:pendSaldo(empId)}};
 }
 function diaria(x){
   const R=[];
@@ -144,9 +145,31 @@ function pendencias(){
     at.filter(e=>e.tipo==='flexivel').forEach(e=>{const n=sem.filter(k=>S.dias.some(x=>x.funcionario_id===e.id&&x.data===k)).length;if(n<e.dias_semana)L.push({t:`${e.nome}: ${n} de ${e.dias_semana} dias nesta semana`,ir:()=>{S.pe=e.id;S.tab='ponto'}})});
   }
   S.faltas.filter(f=>f.data>=hoje&&!f.cobertura_id).forEach(f=>L.push({t:`Falta sem cobertura: ${nome(f.funcionario_id)} em ${dm(f.data)}`,ir:()=>{S.month=f.data.slice(0,7);S.tab='faltas'}}));
-  const pend=at.map(e=>[e,S.faltas.filter(f=>f.funcionario_id===e.id&&!f.horas_quitadas).reduce((s,f)=>s+ +f.horas_devidas,0)]).filter(x=>x[1]>0);
-  if(pend.length)L.push({t:'Horas devidas pendentes: '+pend.map(([e,h])=>e.nome+' '+fh(h)).join(', '),ir:()=>{S.tab='resumo'}});
+  const pend=at.map(e=>[e,pendSaldo(e.id)]).filter(x=>x[1]>0);
+  if(pend.length)L.push({t:'Horas devidas pendentes: '+pend.map(([e,h])=>e.nome+' '+fh(h)).join(', '),ir:()=>{S.tab='horasdev'}});
   return L;
+}
+
+// Horas devidas pendentes já descontando os pagamentos: o que a pessoa pagou abate das faltas mais antigas primeiro.
+// Cada item sai com: restante (ainda deve), pago (já abatido), total (valor original da falta).
+function pendFaltas(empId){
+  const r=[],ids=empId?[empId]:[...new Set(S.faltas.map(f=>f.funcionario_id))];
+  ids.forEach(id=>{
+    let pago=(S.pagH||[]).filter(p=>p.funcionario_id===id).reduce((s,p)=>s+ +p.horas,0);
+    S.faltas.filter(f=>f.funcionario_id===id&&+f.horas_devidas>0&&!f.horas_quitadas).sort((a,b)=>a.data.localeCompare(b.data)).forEach(f=>{
+      const t=+f.horas_devidas,ab=Math.min(t,pago);pago=Math.round((pago-ab)*100)/100;
+      const rest=Math.round((t-ab)*100)/100;
+      if(rest>0)r.push({...f,restante:rest,pago:Math.round(ab*100)/100,total:t});
+    });
+  });
+  return r.sort((a,b)=>a.data.localeCompare(b.data));
+}
+const pendSaldo=empId=>Math.round(pendFaltas(empId).reduce((s,f)=>s+f.restante,0)*100)/100;
+function estadoHoras(f){
+  if(f.horas_quitadas)return 'quitadas';
+  const x=pendFaltas(f.funcionario_id).find(y=>y.id===f.id);
+  if(!x)return 'pagas';
+  return x.pago>0?'restam '+fh(x.restante):'pendentes';
 }
 
 /* ===== js/dados.js ===== */
@@ -174,6 +197,7 @@ async function load(){
     S.fmErro=!!fr.error;S.fmodo=fr.error?{}:Object.fromEntries(fr.data.map(r=>[r.data,r.modo]));
     const sf=await tudo('saldo_folgas','data'),an=await tudo('anotacoes','chave');
     S.v4Erro=!!(sf.error||an.error);S.saldo=sf.error?[]:sf.data;S.notas=an.error?{}:Object.fromEntries(an.data.map(r=>[r.chave,r.texto]));
+    const ph=await tudo('pagamentos_horas','data');S.v5Erro=!!ph.error;S.pagH=ph.error?[]:ph.data;
     S.histOk=false;
     if(!S.dsOk){S.dsOk=true;await carregaDS()}
   }catch(e){alert('Erro ao carregar: '+e.message)}
@@ -203,8 +227,8 @@ function modal(title, body, onSave, label){
 }
 const opts = (list, sel) => list.map(([v,t]) => `<option value="${esc(v)}" ${v===sel?'selected':''}>${esc(t)}</option>`).join('');
 const NAV=[['inicio','Início','home'],['escala','Escala','cal'],['faltas','Faltas','clip'],['func','Equipe','users'],['mais','Mais','more']];
-const SUB={feriados:'Feriados',resumo:'Relatório',conta:'Minha conta',sabados:'Escala dos sábados',ponto:'Folha de ponto',relper:'Relatório por período',design:'Design',ferescala:'Escala dos feriados',saldo:'Saldo de folgas',saldoemp:'Extrato de folgas',historico:'Histórico',backup:'Backup'};
-const BACK={sabados:['escala','Escala'],ponto:['func','Equipe'],relper:['resumo','Relatório'],saldoemp:['saldo','Saldo de folgas']};
+const SUB={horasdev:'Horas devidas',feriados:'Feriados',resumo:'Relatório',conta:'Minha conta',sabados:'Escala dos sábados',ponto:'Folha de ponto',relper:'Relatório por período',design:'Design',ferescala:'Escala dos feriados',saldo:'Saldo de folgas',saldoemp:'Extrato de folgas',historico:'Histórico',backup:'Backup'};
+const BACK={horasdev:['inicio','Início'],sabados:['escala','Escala'],ponto:['func','Equipe'],relper:['resumo','Relatório'],saldoemp:['saldo','Saldo de folgas']};
 const bind = {};
 function hdr(t,sub,u){
   const dt=new Date().toLocaleDateString('pt-BR',{weekday:'long',day:'numeric',month:'long'});
@@ -216,7 +240,7 @@ function hdr(t,sub,u){
 }
 function render(){
   const t=S.tab, sub=SUB[t], nav=BACK[t]&&NAV.some(n=>n[0]===BACK[t][0])?BACK[t][0]:sub?'mais':t, u=(S.user&&S.user.user_metadata)||{};
-  const V={inicio:vInicio,escala:vEscala,faltas:vFaltas,func:vFunc,mais:vMais,feriados:vFeriados,resumo:vResumo,conta:vConta,sabados:vSabados,ponto:vPonto,relper:vRelPer,design:vDesign,ferescala:vFerEscala,saldo:vSaldo,saldoemp:vSaldoEmp,historico:vHistorico,backup:vBackup};
+  const V={inicio:vInicio,escala:vEscala,faltas:vFaltas,func:vFunc,mais:vMais,feriados:vFeriados,resumo:vResumo,conta:vConta,sabados:vSabados,ponto:vPonto,relper:vRelPer,design:vDesign,ferescala:vFerEscala,saldo:vSaldo,saldoemp:vSaldoEmp,horasdev:vHorasDev,historico:vHistorico,backup:vBackup};
   $('#app').innerHTML=`${hdr(t,sub,u)}
   <main>${V[t]()}</main>${(t==='faltas'||t==='func')?'<button class="fab" id="fab">+</button>':''}
   <nav class="bn">${NAV.map(([k,n,i])=>`<button class="${nav===k?'on':''}" data-t="${k}"><i>${ic(i)}</i>${n}</button>`).join('')}</nav>`;
@@ -261,11 +285,11 @@ function editaNota(chave,titulo){
 function vInicio(){
   const k=iso(new Date()),y=new Date().getFullYear(),H=feriados(y,y+1),at=S.emps.filter(e=>e.ativo);
   const trab=at.filter(e=>situ(e,k).work).length,fal=S.faltas.filter(f=>f.data===k).length;
-  const pend=S.faltas.filter(f=>!f.horas_quitadas).reduce((s,f)=>s+ +f.horas_devidas,0);
+  const pend=pendSaldo();
   const prox=Object.entries(H).filter(([d])=>d>k).sort()[0],pd=pendencias();
   const qk=(q,i,t,d)=>`<button class="qk" data-q="${q}"><span class="qi">${ic(i)}</span><b>${t}</b><small>${d}</small><span class="chv">${ic('chev')}</span></button>`;
   return `<div class="qa">${qk('falta','user','Registrar falta','Marque a ausência de um colaborador')}${qk('emp','uplus','Novo funcionário','Cadastre um novo colaborador')}${qk('escala','cal','Ver escala','Confira a escala da equipe')}${qk('resumo','chart','Relatório','Acompanhe os resultados do mês')}</div>
-  <div class="stats"><div class="stat u1">${ic('cal')}<b>${trab}</b>trabalham hoje</div><div class="stat u2">${ic('alert')}<b>${fal}</b>faltas hoje</div><div class="stat u3">${ic('clock')}<b>${fh(pend)}</b>horas devidas</div></div>
+  <div class="stats"><div class="stat u1">${ic('cal')}<b>${trab}</b>trabalham hoje</div><div class="stat u2">${ic('alert')}<b>${fal}</b>faltas hoje</div><div class="stat u3" data-hd="1" style="cursor:pointer">${ic('clock')}<b>${fh(pend)}</b>horas devidas</div></div>
   ${pd.length?`<div class="card"><b>Pendências</b>${pd.slice(0,6).map((p,i)=>`<div class="it" data-pd="${i}"><span class="hi" style="color:var(--warn)">${ic('alert')}</span><div class="grow">${esc(p.t)}</div><span class="chv">${ic('chev')}</span></div>`).join('')}</div>`:''}
   <div class="card"><div class="row" style="margin:0 0 4px"><span class="hi">${ic('cal')}</span><b class="grow" style="font-size:18px">Hoje</b><a class="lk" id="vt">Ver toda a escala ${ic('chev')}</a></div>${H[k]?banFer(k,H[k]):''}${at.filter(e=>rel(e,k)).map(e=>item(e,k)).join('')||'<p class="mut">Ninguém escalado hoje.</p>'}</div>
   ${prox?`<div class="card"><b>Próximo feriado</b>${esc(prox[1])} · ${fmt(prox[0])}</div>`:''}`;
@@ -273,12 +297,13 @@ function vInicio(){
 bind.inicio=()=>{
   document.querySelectorAll('[data-q]').forEach(b=>b.onclick=()=>{const q=b.dataset.q;if(q==='falta')faltaForm(null);else if(q==='emp')empForm(null);else{S.tab=q;render()}});
   document.querySelectorAll('.it[data-e]').forEach(l=>l.onclick=()=>empForm(S.emps.find(e=>e.id===l.dataset.e)));
+  document.querySelectorAll('[data-hd]').forEach(b=>b.onclick=()=>{S.tab='horasdev';render();scrollTo(0,0)});
   if($('#vt'))$('#vt').onclick=()=>{S.tab='escala';render()};
   document.querySelectorAll('[data-pd]').forEach(b=>b.onclick=()=>{pendencias()[+b.dataset.pd].ir();render();scrollTo(0,0)});
 };
 function vMais(){
   return `<div class="card">${[['sabados','cal','Escala dos sábados','Planeje o mês inteiro'],['ferescala','star','Escala dos feriados','Aberto, fechado ou horário especial'],['feriados','star','Feriados','Nacionais e extras'],['saldo','cal','Saldo de folgas','Dias de folga de cada um, com anotações'],['resumo','chart','Relatório','Tudo do mês para os donos'],['historico','history','Histórico','Veja e restaure o que foi apagado'],['backup','download','Backup','Baixe ou restaure todos os dados'],['design','palette','Design','Cores, foto de topo e logo'],['conta','user','Minha conta','Perfil, senha e instalar app']].map(([k,i,t,d],n)=>`<div class="it" data-go="${k}"><div class="av">${ic(i)}</div><div class="grow"><b>${t}</b><br><small>${d}</small></div>${ic('chev')}</div>`).join('')}
-  <div class="it" id="so"><div class="av t4">${ic('out')}</div><div class="grow"><b>Sair</b></div></div></div>`;
+  <div class="it" id="so"><div class="av t4">${ic('out')}</div><div class="grow"><b>Sair</b></div></div></div><p class="mut" style="text-align:center;margin:10px 0 0"><small>Versão ${APP_VERSAO}</small></p>`;
 }
 bind.mais=()=>{
   document.querySelectorAll('[data-go]').forEach(b=>b.onclick=()=>{S.tab=b.dataset.go;render();scrollTo(0,0)});
@@ -413,7 +438,7 @@ function vFunc(){
 }
 bind.func=()=>document.querySelectorAll('.it[data-e]').forEach(l=>l.onclick=()=>{
   const e=S.emps.find(x=>x.id===l.dataset.e);
-  sheet(esc(e.nome),[...(e.tipo==='flexivel'?[['Folha de ponto (registrar horários)',()=>{S.pe=e.id;S.tab='ponto';render()}]]:[]),['Relatório por período',()=>{S.rp.emp=e.id;S.tab='relper';render()}],['Saldo de folgas',()=>{S.sf=e.id;S.tab='saldoemp';render()}],['Editar dados e escala',()=>empForm(e)],[e.ativo?'Desativar (mantém histórico)':'Reativar',async()=>{await ck(db.from('funcionarios').update({ativo:!e.ativo}).eq('id',e.id));load()}],['Excluir tudo dele',async()=>{if(!confirm(`Excluir ${e.nome} e TODO o histórico dele? (Uma cópia fica em Mais > Histórico, para restaurar.)`))return;try{await logar('apagou','funcionario',`Funcionário ${e.nome} (com todo o histórico)`,{func:e,escalas:S.esc.filter(x=>x.funcionario_id===e.id),dias:S.dias.filter(x=>x.funcionario_id===e.id),faltas:S.faltas.filter(x=>x.funcionario_id===e.id),saldo:S.saldo.filter(x=>x.funcionario_id===e.id)});await ck(db.from('funcionarios').delete().eq('id',e.id))}catch(x){alert(x.message)}load()},'red']]);
+  sheet(esc(e.nome),[...(e.tipo==='flexivel'?[['Folha de ponto (registrar horários)',()=>{S.pe=e.id;S.tab='ponto';render()}]]:[]),['Relatório por período',()=>{S.rp.emp=e.id;S.tab='relper';render()}],['Saldo de folgas',()=>{S.sf=e.id;S.tab='saldoemp';render()}],['Editar dados e escala',()=>empForm(e)],[e.ativo?'Desativar (mantém histórico)':'Reativar',async()=>{await ck(db.from('funcionarios').update({ativo:!e.ativo}).eq('id',e.id));load()}],['Excluir tudo dele',async()=>{if(!confirm(`Excluir ${e.nome} e TODO o histórico dele? (Uma cópia fica em Mais > Histórico, para restaurar.)`))return;try{await logar('apagou','funcionario',`Funcionário ${e.nome} (com todo o histórico)`,{func:e,escalas:S.esc.filter(x=>x.funcionario_id===e.id),dias:S.dias.filter(x=>x.funcionario_id===e.id),faltas:S.faltas.filter(x=>x.funcionario_id===e.id),saldo:S.saldo.filter(x=>x.funcionario_id===e.id),pagamentos:S.pagH.filter(x=>x.funcionario_id===e.id)});await ck(db.from('funcionarios').delete().eq('id',e.id))}catch(x){alert(x.message)}load()},'red']]);
 });
 function empForm(e){
   const sc=e?S.esc.filter(x=>x.funcionario_id===e.id):[];
@@ -440,12 +465,43 @@ function empForm(e){
 
 /* ===== js/tela-faltas.js ===== */
 /* Tela: Faltas, atestados e anexos */
+const avisoV5=()=>S.v5Erro?'<div class="card"><b>Falta uma atualização no banco</b><small>Rode a migração 005 no Supabase (SQL Editor) para registrar o pagamento das horas devidas. O passo a passo está no README.</small></div>':'';
+function pagForm(empId,p){
+  if(S.v5Erro)return alert('Para registrar pagamentos, rode a migração 005 no Supabase (veja o README).');
+  const ativos=S.emps.filter(e=>e.ativo||e.id===empId||(p&&e.id===p.funcionario_id)).map(e=>[e.id,e.nome]);
+  if(!ativos.length)return alert('Cadastre funcionários primeiro.');
+  modal(p?'Editar pagamento de horas':'Registrar pagamento de horas',
+    `<label>Funcionário<select name="fu">${opts(ativos,(p&&p.funcionario_id)||empId)}</select></label>
+     <div id="dv" class="mut" style="margin:-4px 0 10px"><small></small></div>
+     <label>Dia em que pagou<input type="date" name="dt" value="${(p&&p.data)||iso(new Date())}"></label>
+     <div class="row"><label class="grow">Chegou<input type="time" name="en" value="${hhmm(p&&p.entrada)}"></label><label class="grow">Saiu<input type="time" name="sa" value="${hhmm(p&&p.saida)}"></label></div>
+     <label>Total pago (horas) — calcula sozinho pelos horários<input type="number" step="0.25" min="0" name="hr" value="${(p&&p.horas)||''}"></label>
+     <label>Observação (por que pagou, como foi)<textarea name="ob" rows="3">${esc(p&&p.observacao)}</textarea></label>`,
+    async d=>{
+      const g=n=>d.querySelector(`[name="${n}"]`),fu=g('fu').value,dt=g('dt').value,en=g('en').value,sa=g('sa').value,hr=Math.round((+g('hr').value||0)*100)/100;
+      if(!dt)throw Error('Informe o dia.');
+      if((en&&!sa)||(!en&&sa))throw Error('Preencha a hora de chegada e a de saída (ou deixe as duas em branco).');
+      if(en&&sa&&sa<=en)throw Error('A saída precisa ser depois da chegada.');
+      if(!(hr>0))throw Error('Informe o total de horas pagas.');
+      const deve=pendSaldo(fu)+(p&&p.funcionario_id===fu?+p.horas:0);
+      if(hr>deve&&!confirm(`${nome(fu)} deve ${fh(deve)}, mas você está registrando ${fh(hr)}. Registrar mesmo assim?`))throw Object.assign(Error('cancelado'),{silencioso:true});
+      const row={funcionario_id:fu,data:dt,entrada:en||null,saida:sa||null,horas:hr,observacao:g('ob').value.trim()||null};
+      if(p)await ck(db.from('pagamentos_horas').update(row).eq('id',p.id));else await ck(db.from('pagamentos_horas').insert(row));
+      S.month=dt.slice(0,7);
+    },'Salvar');
+  const d=[...document.querySelectorAll('dialog')].pop(),g=n=>d.querySelector(`[name="${n}"]`),
+    dev=()=>{const id=g('fu').value,v=pendSaldo(id)+(p&&p.funcionario_id===id?+p.horas:0);d.querySelector('#dv small').textContent=v>0?'Deve atualmente: '+fh(v):'Não está devendo horas.'},
+    calc=()=>{if(g('en').value&&g('sa').value&&g('sa').value>g('en').value)g('hr').value=Math.round(horas(g('en').value,g('sa').value)*100)/100};
+  g('fu').onchange=dev;g('en').onchange=calc;g('sa').onchange=calc;g('en').oninput=calc;g('sa').oninput=calc;dev();
+}
 function vFaltas(){
-  const l=S.faltas.filter(f=>f.data.startsWith(S.month));
+  const l=S.faltas.filter(f=>f.data.startsWith(S.month)),pm=new Map(pendFaltas().map(x=>[x.id,x]));
+  const horasTxt=f=>{if(!(+f.horas_devidas>0))return '';const x=pm.get(f.id);
+    return `<div style="margin-top:6px">Deve ${f.horas_devidas}h ${f.horas_quitadas?'<span class="tag ok">quitadas</span>':!x?'<span class="tag ok">pagas</span>':x.pago>0?`<span class="tag warn">restam ${fh(x.restante)}</span> <small class="mut">já pagou ${fh(x.pago)}</small>`:'<span class="tag warn">pendentes</span>'}</div>`};
   return `<div class="card" style="padding:10px"><input type="month" id="mm" value="${S.month}"></div>
   ${l.map(f=>`<div class="card tint soft ${f.atestado?'t1':'t4'}" data-f="${f.id}" style="cursor:pointer"><div class="row" style="margin:0"><b class="grow" style="margin:0">${esc(nome(f.funcionario_id))}</b><span class="tag ${f.atestado?'ok':'bad'}">${f.atestado?'Com atestado':'Sem atestado'}</span></div>
   <small>${fmt(f.data)} · ${esc(f.motivo)}</small>
-  ${+f.horas_devidas>0?`<div style="margin-top:6px">Deve ${f.horas_devidas}h ${f.horas_quitadas?'<span class="tag ok">quitadas</span>':'<span class="tag warn">pendentes</span>'}</div>`:''}
+  ${horasTxt(f)}
   ${f.cobertura_id?`<div style="margin-top:4px">Coberto por <b>${esc(nome(f.cobertura_id))}</b></div>`:''}${f.observacao?`<div class="mut" style="margin-top:4px"><small>${esc(f.observacao)}</small></div>`:''}${(f.anexos||[]).length?`<div style="margin-top:6px"><span class="tag gr">${f.anexos.length} anexo(s)</span></div>`:''}</div>`).join('')||'<div class="card mut">Nenhuma falta neste mês. Toque no + para registrar.</div>'}`;
 }
 bind.faltas=()=>{
@@ -516,6 +572,26 @@ function faltaForm(f){
   };
   d.querySelector('[name="at"]').onchange=mostra;d.querySelector('[name="mo"]').onchange=mostra;mostra();
 }
+
+/* Tela: Horas devidas (todos que devem, de qualquer mês; registrar pagamentos) */
+function vHorasDev(){
+  const deve=S.emps.map(e=>[e,pendFaltas(e.id)]).filter(x=>x[1].length),tot=pendSaldo();
+  const pgDe=id=>(S.pagH||[]).filter(p=>p.funcionario_id===id).sort((a,b)=>b.data.localeCompare(a.data)||String(b.criado_em).localeCompare(String(a.criado_em)));
+  const pgHtml=l=>l.map(p=>`<div data-pgi="${p.id}" style="cursor:pointer;padding:9px 0;border-top:1px solid var(--line)"><div class="row" style="margin:0"><b class="grow">${fmt(p.data)}</b><span class="tag ok">Pagou ${fh(+p.horas)}</span></div>${p.entrada&&p.saida?`<small>Chegou ${hhmm(p.entrada)} · saiu ${hhmm(p.saida)}</small>`:''}${p.observacao?`<br><small class="mut">${esc(p.observacao)}</small>`:''}</div>`).join('');
+  const pessoa=([e,fs])=>{const pg=pgDe(e.id);return `<div class="card"><div class="row" style="margin:0"><div class="grow"><b style="font-size:17px">${esc(e.nome)}</b><br><small>Deve <b>${fh(fs.reduce((s,f)=>s+f.restante,0))}</b></small></div><button class="sm" data-pg="${e.id}">Registrar pagamento</button></div>
+    <div style="margin-top:10px"><small class="mut">Faltas com horas a pagar</small>${fs.map(f=>`<div style="padding:9px 0;border-top:1px solid var(--line)"><div class="row" style="margin:0"><b class="grow">${fmt(f.data)} - ${esc(f.motivo)}</b><span class="tag warn">Deve ${fh(f.restante)}</span></div><small>${f.cobertura_id?'Coberto por '+esc(nome(f.cobertura_id)):'Sem cobertura'}${f.pago>0?` · já pagou ${fh(f.pago)} de ${fh(f.total)}`:''}</small>${f.observacao?`<br><small class="mut">${esc(f.observacao)}</small>`:''}</div>`).join('')}</div>
+    ${pg.length?`<div style="margin-top:10px"><small class="mut">Pagamentos já feitos${pg.length>8?' (últimos 8)':''}</small>${pgHtml(pg.slice(0,8))}</div>`:''}</div>`};
+  const ult=(S.pagH||[]).filter(p=>!deve.some(x=>x[0].id===p.funcionario_id)).sort((a,b)=>b.data.localeCompare(a.data)).slice(0,10);
+  return `${avisoV5()}${deve.length?`<div class="card"><b>Total devido: ${fh(tot)}</b><p class="mut" style="margin:2px 0 0"><small>${deve.length} ${deve.length===1?'pessoa deve':'pessoas devem'} horas, de qualquer mês. Toque em Registrar pagamento para descontar o que já pagou.</small></p></div>${deve.map(pessoa).join('')}`:'<div class="card mut">Ninguém está devendo horas.</div>'}
+  ${ult.length?`<div class="card"><b>Pagamentos de quem já quitou</b>${ult.map(p=>`<div data-pgi="${p.id}" style="cursor:pointer;padding:9px 0;border-top:1px solid var(--line)"><div class="row" style="margin:0"><b class="grow">${esc(nome(p.funcionario_id))} · ${fmt(p.data)}</b><span class="tag ok">Pagou ${fh(+p.horas)}</span></div>${p.observacao?`<small class="mut">${esc(p.observacao)}</small>`:''}</div>`).join('')}</div>`:''}`;
+}
+bind.horasdev=()=>{
+  document.querySelectorAll('[data-pg]').forEach(b=>b.onclick=()=>pagForm(b.dataset.pg));
+  document.querySelectorAll('[data-pgi]').forEach(c=>c.onclick=()=>{
+    const p=S.pagH.find(x=>x.id===c.dataset.pgi);if(!p)return;
+    sheet(esc(nome(p.funcionario_id))+' · '+fmt(p.data),[['Editar',()=>pagForm(p.funcionario_id,p)],['Apagar pagamento',async()=>{if(!confirm('Apagar este pagamento? As horas voltam a ficar devidas. Dá para restaurar em Mais > Histórico.'))return;await logar('apagou','pagamento_horas',`Pagamento de ${fh(+p.horas)} de ${nome(p.funcionario_id)} em ${fmt(p.data)}`,{pagamentos:[p]});await ck(db.from('pagamentos_horas').delete().eq('id',p.id));load()},'red']]);
+  });
+};
 
 /* ===== js/tela-feriados.js ===== */
 /* Telas: Feriados e Escala dos feriados */
@@ -634,7 +710,7 @@ bind.saldoemp=()=>{
 
 /* ===== js/tela-historico.js ===== */
 /* Tela: Histórico (o que foi apagado, com opção de restaurar) */
-const RESTAURAVEL=['falta','funcionario','escala_dia','saldo'];
+const RESTAURAVEL=['falta','funcionario','escala_dia','saldo','pagamento_horas'];
 async function carregaHist(){
   const r=await db.from('historico').select('*').order('quando',{ascending:false}).limit(80);
   S.hist=r.error?[]:r.data;if(r.error)S.v4Erro=true;
@@ -650,10 +726,11 @@ bind.historico=()=>{
 async function restaurar(h){
   const d=h.detalhe||{},up=(t,rows,conf)=>rows&&rows.length?ck(db.from(t).upsert(rows,conf?{onConflict:conf}:undefined)):null;
   try{
-    if(h.entidade==='funcionario'){await up('funcionarios',[d.func]);await up('escalas',d.escalas);await up('escalas_dia',d.dias,'funcionario_id,data');await up('faltas',d.faltas);await up('saldo_folgas',d.saldo)}
+    if(h.entidade==='funcionario'){await up('funcionarios',[d.func]);await up('escalas',d.escalas);await up('escalas_dia',d.dias,'funcionario_id,data');await up('faltas',d.faltas);await up('saldo_folgas',d.saldo);await up('pagamentos_horas',d.pagamentos)}
     else if(h.entidade==='falta'){await up('faltas',[d.falta]);await up('saldo_folgas',d.saldo)}
     else if(h.entidade==='escala_dia')await up('escalas_dia',d.dias,'funcionario_id,data');
     else if(h.entidade==='saldo')await up('saldo_folgas',d.saldo);
+    else if(h.entidade==='pagamento_horas')await up('pagamentos_horas',d.pagamentos);
     await ck(db.from('historico').update({restaurado:true}).eq('id',h.id));
     await logar('restaurou',h.entidade,h.resumo,null);
   }catch(e){return alert('Não foi possível restaurar: '+e.message)}
@@ -662,7 +739,7 @@ async function restaurar(h){
 
 /* ===== js/tela-backup.js ===== */
 /* Tela: Backup (baixar e restaurar todos os dados) */
-const TABELAS_BACKUP=[['funcionarios','id'],['escalas','id'],['escalas_dia','id'],['faltas','id'],['feriados_extras','id'],['feriado_modo','data'],['saldo_folgas','id'],['anotacoes','chave'],['config_app','id']];
+const TABELAS_BACKUP=[['funcionarios','id'],['escalas','id'],['escalas_dia','id'],['faltas','id'],['feriados_extras','id'],['feriado_modo','data'],['saldo_folgas','id'],['pagamentos_horas','id'],['anotacoes','chave'],['config_app','id']];
 function vBackup(){
   return `<div class="card"><b>Baixar backup</b><p class="mut" style="margin:0 0 10px"><small>Salva um arquivo com tudo: funcionários, escalas, faltas, feriados, saldo de folgas, anotações e o design. Guarde no Google Drive ou no e-mail. Os arquivos dos atestados ficam guardados no Supabase e não entram neste arquivo.</small></p><button id="bkd" style="width:100%">Baixar backup agora</button></div>
   <div class="card"><b>Restaurar de um backup</b><p class="mut" style="margin:0 0 6px"><small>Soma os dados do arquivo aos que já existem (não apaga nada). Serve para um banco novo ou para recuperar algo.</small></p><input type="file" id="bkr" accept="application/json,.json"></div>`;
@@ -705,11 +782,18 @@ function detalhe(x){
 }
 const notaRel=D=>`<p class="mut"><small>Horas contadas da entrada até a saída, sem descontar intervalo. Feriados só contam para quem foi escalado neles.</small></p>`;
 function faltasCard(D){
-  return `<div class="card"><b>Faltas e coberturas</b>${D.fm.map(f=>`<div style="padding:10px 0;border-top:1px solid var(--line)"><div class="row" style="margin:0"><b class="grow">${esc(nome(f.funcionario_id))} · ${fmt(f.data)}</b><span class="tag ${f.atestado?'ok':'bad'}">${f.atestado?'Com atestado':'Sem atestado'}</span></div><small>${esc(f.motivo)}${+f.horas_devidas>0?` · deve ${fh(+f.horas_devidas)} (${f.horas_quitadas?'quitadas':'pendentes'})`:''}${f.cobertura_id?` · coberto por ${esc(nome(f.cobertura_id))}`:' · sem cobertura'}</small>${f.observacao?`<br><small>${esc(f.observacao)}</small>`:''}${(f.anexos||[]).length?`<br><button class="ghost sm" data-ax="${f.id}" style="margin-top:6px">Ver anexos (${f.anexos.length})</button>`:''}</div>`).join('')||'<p class="mut">Nenhuma falta neste período.</p>'}</div>`;
+  return `<div class="card"><b>Faltas e coberturas</b>${D.fm.map(f=>`<div style="padding:10px 0;border-top:1px solid var(--line)"><div class="row" style="margin:0"><b class="grow">${esc(nome(f.funcionario_id))} · ${fmt(f.data)}</b><span class="tag ${f.atestado?'ok':'bad'}">${f.atestado?'Com atestado':'Sem atestado'}</span></div><small>${esc(f.motivo)}${+f.horas_devidas>0?` · deve ${fh(+f.horas_devidas)} (${estadoHoras(f)})`:''}${f.cobertura_id?` · coberto por ${esc(nome(f.cobertura_id))}`:' · sem cobertura'}</small>${f.observacao?`<br><small>${esc(f.observacao)}</small>`:''}${(f.anexos||[]).length?`<br><button class="ghost sm" data-ax="${f.id}" style="margin-top:6px">Ver anexos (${f.anexos.length})</button>`:''}</div>`).join('')||'<p class="mut">Nenhuma falta neste período.</p>'}</div>`;
 }
 function pendCard(D){
+  const a=pendCard0(D),b=pagRelCard(D);return a+b;
+}
+function pagRelCard(D){
+  if(!D.pagL||!D.pagL.length)return '';
+  return `<div class="card"><b>Horas pagas no período</b>${D.pagL.map(p=>`<div style="padding:10px 0;border-top:1px solid var(--line)"><div class="row" style="margin:0"><b class="grow">${esc(nome(p.funcionario_id))} · ${fmt(p.data)}</b><span class="tag ok">Pagou ${fh(+p.horas)}</span></div>${p.entrada&&p.saida?`<small>Chegou ${hhmm(p.entrada)} · saiu ${hhmm(p.saida)}</small>`:''}${p.observacao?`<br><small>${esc(p.observacao)}</small>`:''}</div>`).join('')}</div>`;
+}
+function pendCard0(D){
   if(!D.pendL||!D.pendL.length)return '';
-  return `<div class="card"><b>Horas devidas pendentes</b><p class="mut" style="margin:2px 0 0"><small>De qualquer mês, até serem marcadas como quitadas.</small></p>${D.pendL.map(f=>`<div style="padding:10px 0;border-top:1px solid var(--line)"><div class="row" style="margin:0"><b class="grow">${esc(nome(f.funcionario_id))}</b><span class="tag warn">Deve ${fh(+f.horas_devidas)}</span></div><small>${fmt(f.data)} - ${esc(f.motivo)}${f.cobertura_id?`<br>Coberto por ${esc(nome(f.cobertura_id))}`:'<br>Sem cobertura'}</small>${f.observacao?`<br><small>${esc(f.observacao)}</small>`:''}</div>`).join('')}</div>`;
+  return `<div class="card"><b>Horas devidas pendentes</b><p class="mut" style="margin:2px 0 0"><small>De qualquer mês, até serem marcadas como quitadas.</small></p>${D.pendL.map(f=>`<div style="padding:10px 0;border-top:1px solid var(--line)"><div class="row" style="margin:0"><b class="grow">${esc(nome(f.funcionario_id))}</b><span class="tag warn">Deve ${fh(f.restante)}</span></div><small>${fmt(f.data)} - ${esc(f.motivo)}${f.cobertura_id?`<br>Coberto por ${esc(nome(f.cobertura_id))}`:'<br>Sem cobertura'}${f.pago>0?`<br>Já pagou ${fh(f.pago)} de ${fh(f.total)}`:''}</small>${f.observacao?`<br><small>${esc(f.observacao)}</small>`:''}</div>`).join('')}</div>`;
 }
 function ferCard(D){
   if(!D.ferEsc||!D.ferEsc.length)return '';
@@ -796,8 +880,9 @@ function linhasRel(D){
   }
   L.push('','## FALTAS E COBERTURAS');
   if(!D.fm.length)L.push('Nenhuma falta no período.');
-  D.fm.forEach(f=>L.push(`${fmt(f.data)} — ${nome(f.funcionario_id)}: ${f.motivo}${f.atestado?' (com atestado)':' (sem atestado)'}${+f.horas_devidas>0?`, deve ${fh(+f.horas_devidas)}${f.horas_quitadas?' (quitadas)':' (pendentes)'}`:''}${f.cobertura_id?`, coberto por ${nome(f.cobertura_id)}`:', sem cobertura'}${f.observacao?` — ${f.observacao}`:''}`));
-  if(D.pendL&&D.pendL.length){L.push('','## HORAS DEVIDAS PENDENTES');D.pendL.forEach(f=>{L.push(nome(f.funcionario_id),`${fmt(f.data)} - ${f.motivo}`,f.cobertura_id?`Coberto por ${nome(f.cobertura_id)}`:'Sem cobertura',`Deve ${fh(+f.horas_devidas)}`);if(f.observacao)L.push(f.observacao);L.push('')})}
+  D.fm.forEach(f=>L.push(`${fmt(f.data)} — ${nome(f.funcionario_id)}: ${f.motivo}${f.atestado?' (com atestado)':' (sem atestado)'}${+f.horas_devidas>0?`, deve ${fh(+f.horas_devidas)}${' ('+estadoHoras(f)+')'}`:''}${f.cobertura_id?`, coberto por ${nome(f.cobertura_id)}`:', sem cobertura'}${f.observacao?` — ${f.observacao}`:''}`));
+  if(D.pendL&&D.pendL.length){L.push('','## HORAS DEVIDAS PENDENTES');D.pendL.forEach(f=>{L.push(nome(f.funcionario_id),`${fmt(f.data)} - ${f.motivo}`,f.cobertura_id?`Coberto por ${nome(f.cobertura_id)}`:'Sem cobertura',`Deve ${fh(f.restante)}`+(f.pago>0?` (já pagou ${fh(f.pago)} de ${fh(f.total)})`:''));if(f.observacao)L.push(f.observacao);L.push('')})}
+  if(D.pagL&&D.pagL.length){L.push('','## HORAS PAGAS NO PERÍODO');D.pagL.forEach(p=>{L.push(nome(p.funcionario_id),`${fmt(p.data)} - Pagou ${fh(+p.horas)}${p.entrada&&p.saida?` (chegou ${hhmm(p.entrada)}, saiu ${hhmm(p.saida)})`:''}`);if(p.observacao)L.push(p.observacao);L.push('')})}
   if(!D.empId){L.push('','## POR FUNCIONÁRIO');D.func.forEach(y=>L.push(`${y.e.nome}: ${fh(y.trab)} trabalhadas (previstas ${fh(y.prev)}${y.falt>0?`, -${fh(y.falt)} por faltas`:''}${y.cobH>0?`, +${fh(y.cobH)} por coberturas`:''}) | ${y.dias.length} dias | ${y.fe.length} falta(s) | devendo ${fh(y.pendTotal)}`))}
   const sd=D.func.filter(y=>y.saldo!==0||y.movs.length);
   if(sd.length){L.push('','## SALDO DE FOLGAS');sd.forEach(y=>{L.push(`${y.e.nome}: saldo ${fd(y.saldo)}`);y.movs.forEach(m=>L.push(`  ${fmt(m.data)} ${m.tipo==='credito'?'+':'-'}${fn(+m.dias)}${m.anotacao?' - '+m.anotacao:''}`))})}
@@ -952,15 +1037,24 @@ function baixarPDF(D){
         doc.text(t,col.al==='r'?cx+col.w-3:cx+3,y+5,{align:col.al==='r'?'right':'left'});cx+=col.w});
       y+=rh});
     S(K.line);doc.setLineWidth(.3);doc.line(M,y,M+CW,y);y+=9};
+  const pagCartoes=ps=>ps.forEach(p=>{
+    ft(8,false);const obs=p.observacao?doc.splitTextToSize(L(p.observacao),CW-14):[],h=18+obs.length*3.8+(obs.length?1.5:0);
+    ensure(h+4);F(K.white);S(K.line);doc.setLineWidth(.3);doc.roundedRect(M,y,CW,h,2.5,2.5,'FD');F(K.ok);doc.roundedRect(M,y,2.8,h,1.4,1.4,'F');
+    ft(10.5,true);T(K.ink);doc.text(L(nome(p.funcionario_id)),M+7,y+6.5);
+    ft(7.5,true);const lab='Pagou '+fh(+p.horas),pw=doc.getTextWidth(L(lab))+6;pill(M+CW-pw-4,y+6.5,lab,K.ok,K.okb);
+    ft(8.5,false);T(K.mut);doc.text(L(fmt(p.data)+(p.entrada&&p.saida?'   ·   Chegou '+hhmm(p.entrada)+'   ·   Saiu '+hhmm(p.saida):'')),M+7,y+12.2);
+    if(obs.length){ft(8,false);T(K.mut);obs.forEach((t,i)=>doc.text(t,M+7,y+17.2+i*3.8))}
+    y+=h+4});
   const cartoes=(fm,pend)=>fm.forEach(f=>{
     ft(8,false);const obs=f.observacao?doc.splitTextToSize(L(f.observacao),CW-14):[],h=23+obs.length*3.8+(obs.length?1.5:0),cor=pend?K.warn:f.atestado?K.ok:K.bad;
     ensure(h+4);F(K.white);S(K.line);doc.setLineWidth(.3);doc.roundedRect(M,y,CW,h,2.5,2.5,'FD');F(cor);doc.roundedRect(M,y,2.8,h,1.4,1.4,'F');
     ft(10.5,true);T(K.ink);doc.text(L(nome(f.funcionario_id)),M+7,y+6.5);
-    ft(7.5,true);const lab=pend?'Deve '+fh(+f.horas_devidas):f.atestado?'Com atestado':'Sem atestado',pw=doc.getTextWidth(L(lab))+6;pill(M+CW-pw-4,y+6.5,lab,cor,pend?K.warnb:f.atestado?K.okb:K.badb);
+    ft(7.5,true);const lab=pend?'Deve '+fh(f.restante):f.atestado?'Com atestado':'Sem atestado',pw=doc.getTextWidth(L(lab))+6;pill(M+CW-pw-4,y+6.5,lab,cor,pend?K.warnb:f.atestado?K.okb:K.badb);
     ft(8.5,false);T(K.mut);doc.text(L(fmt(f.data)+'   ·   '+f.motivo),M+7,y+12.2);
     let px=M+7;const py=y+18.6;
     px+=pill(px,py,f.cobertura_id?'Coberto por '+nome(f.cobertura_id):'Sem cobertura',f.cobertura_id?K.ok:K.gr,f.cobertura_id?K.okb:K.grb)+2;
-    if(+f.horas_devidas>0&&!pend)px+=pill(px,py,'Deve '+fh(+f.horas_devidas)+(f.horas_quitadas?' (quitadas)':' (pendentes)'),K.warn,K.warnb)+2;
+    if(+f.horas_devidas>0&&!pend)px+=pill(px,py,'Deve '+fh(+f.horas_devidas)+' ('+estadoHoras(f)+')',K.warn,K.warnb)+2;
+    if(pend&&f.pago>0)px+=pill(px,py,'Já pagou '+fh(f.pago)+' de '+fh(f.total),K.info,K.infob)+2;
     if((f.anexos||[]).length)pill(px,py,f.anexos.length+' anexo(s)',K.info,K.infob);
     if(obs.length){ft(8,false);T(K.mut);obs.forEach((t,i)=>doc.text(t,M+7,y+25.2+i*3.8))}
     y+=h+4});
@@ -985,6 +1079,7 @@ function baixarPDF(D){
   secao('Faltas e coberturas');
   if(!D.fm.length){ft(9.5,false);T(K.mut);doc.text('Nenhuma falta neste período.',M,y);y+=10}else cartoes(D.fm);
   if(D.pendL&&D.pendL.length){secao('Horas devidas pendentes');ft(8,false);T(K.mut);doc.text(L('De qualquer mês, até serem marcadas como quitadas.'),M,y);y+=6;cartoes(D.pendL,true)}
+  if(D.pagL&&D.pagL.length){secao('Horas pagas no período');pagCartoes(D.pagL)}
   if(!D.empId){
     secao('Por funcionário');
     tabela([{t:'Funcionário',w:44},{t:'Previstas',w:24,al:'r'},{t:'Faltas',w:28,al:'r'},{t:'Cobertas',w:24,al:'r'},{t:'Trabalhadas',w:28,al:'r'},{t:'Dias',w:14,al:'r'},{t:'Devendo',w:20,al:'r'}],
