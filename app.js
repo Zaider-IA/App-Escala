@@ -1,6 +1,6 @@
 /* ===== js/base.js ===== */
 /* Base: conexão, estado, utilitários de data/texto, ícones e cálculo dos feriados */
-const APP_VERSAO = '8 · 06/11/2026';
+const APP_VERSAO = '9 · 19/11/2026';
 const db = supabase.createClient(CFG.url, CFG.key);
 const $ = s => document.querySelector(s);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -13,7 +13,7 @@ const fmt = s => parse(s).toLocaleDateString('pt-BR');
 const monday = d => { const x = new Date(d); x.setDate(x.getDate() - (x.getDay()+6)%7); x.setHours(0,0,0,0); return x; };
 const ck = async q => { const r = await q; if (r.error) throw r.error; return r; };
 const hhmm = t => (t||'').slice(0,5);
-let S = { tab:'inicio', pagH:[], v5Erro:false, dias:[], saldo:[], notas:{}, v4Erro:false, hist:[], histOk:false, sf:'', dsOk:false, fmodo:{}, fmErro:false, fm:iso(new Date()).slice(0,7), sm:iso(new Date()).slice(0,7), emps:[], esc:[], faltas:[], extras:[], day:iso(new Date()), month:iso(new Date()).slice(0,7), year:new Date().getFullYear(), verInativos:false };
+let S = { tab:'inicio', pagH:[], v5Erro:false, v6Erro:false, dias:[], saldo:[], notas:{}, v4Erro:false, hist:[], histOk:false, sf:'', dsOk:false, fmodo:{}, fmErro:false, fm:iso(new Date()).slice(0,7), sm:iso(new Date()).slice(0,7), emps:[], esc:[], faltas:[], extras:[], day:iso(new Date()), month:iso(new Date()).slice(0,7), year:new Date().getFullYear(), verInativos:false };
 function pascoa(y){const a=y%19,b=Math.floor(y/100),c=y%100,d=Math.floor(b/4),e=b%4,f=Math.floor((b+8)/25),g=Math.floor((b-f+1)/3),h=(19*a+b-d-g+15)%30,i=Math.floor(c/4),k=c%4,l=(32+2*e+2*i-h-k)%7,m=Math.floor((a+11*h+22*l)/451),mes=Math.floor((h+l-7*m+114)/31),dia=((h+l-7*m+114)%31)+1;return new Date(y,mes-1,dia);}
 function feriadosAno(y){
   const m = {}, add = (d,n) => m[iso(d)] = n, off = (d,n) => { const x=new Date(d); x.setDate(x.getDate()+n); return x; };
@@ -52,7 +52,7 @@ function situ(e,k){
   const f=S.faltas.find(x=>x.funcionario_id===e.id&&x.data===k),cb=S.faltas.filter(x=>x.cobertura_id===e.id&&x.data===k),t=turnoDia(e,k),md=modoFer(k);
   const sc=S.esc.find(x=>x.funcionario_id===e.id&&x.dia_semana===parse(k).getDay());
   let sub,tag='',work=false;
-  if(t){sub=`${t.en} às ${t.sa}`;work=true}
+  if(t){sub=txtAs(t);work=true}
   else if(e.tipo==='flexivel')sub='Não escalada neste dia';
   else if(md==='fechado'){sub='Fechado (feriado)';tag='<span class="tag gr">Fechado</span>'}
   else if(md==='especial')sub='Fora da escala do feriado';
@@ -71,12 +71,17 @@ function turnoDia(e,k){
   const md=modoFer(k);
   if(md==='fechado'&&e.tipo!=='flexivel')return null;
   const ov=S.dias.find(x=>x.funcionario_id===e.id&&x.data===k);
-  if(ov)return {en:hhmm(ov.entrada),sa:hhmm(ov.saida)};
+  if(ov)return {en:hhmm(ov.entrada),sa:hhmm(ov.saida),...(ov.entrada2&&ov.saida2?{en2:hhmm(ov.entrada2),sa2:hhmm(ov.saida2)}:{})};
   if(e.tipo==='flexivel'||md==='especial')return null;
   const sc=S.esc.find(x=>x.funcionario_id===e.id&&x.dia_semana===parse(k).getDay());
   return sc&&!sc.folga&&sc.entrada&&sc.saida?{en:hhmm(sc.entrada),sa:hhmm(sc.saida)}:null;
 }
-const horasPrev=(e,k)=>{const t=turnoDia(e,k);return t?horas(t.en,t.sa):0};
+// Turno com dois períodos no mesmo dia (entra, sai e volta): en/sa = 1º período, en2/sa2 = retorno
+const horasT=t=>horas(t.en,t.sa)+(t.en2?horas(t.en2,t.sa2):0);
+const txtT=(t,s)=>`${t.en}${s||'-'}${t.sa}`+(t.en2?` e ${t.en2}${s||'-'}${t.sa2}`:'');
+const txtAs=t=>`${t.en} às ${t.sa}`+(t.en2?` e ${t.en2} às ${t.sa2}`:'');
+const txtDia=x=>`${hhmm(x.entrada)} às ${hhmm(x.saida)}`+(x.entrada2?` e ${hhmm(x.entrada2)} às ${hhmm(x.saida2)}`:'');
+const horasPrev=(e,k)=>{const t=turnoDia(e,k);return t?horasT(t):0};
 function setSemana(n){const m=monday(new Date());m.setDate(m.getDate()+7*n);const f=new Date(m);f.setDate(f.getDate()+6);S.rp.de=iso(m);S.rp.ate=iso(f)}
 function setMes(n){const d=new Date(),a=new Date(d.getFullYear(),d.getMonth()+n,1),[de,ate]=mesRange(iso(a).slice(0,7));S.rp.de=de;S.rp.ate=ate}
 function relDados(de,ate,empId){
@@ -85,23 +90,23 @@ function relDados(de,ate,empId){
   let emps=S.emps.filter(e=>e.ativo||fm0.some(f=>f.funcionario_id===e.id||f.cobertura_id===e.id)||S.dias.some(x=>x.funcionario_id===e.id&&x.data>=de&&x.data<=ate));
   if(empId)emps=emps.filter(e=>e.id===empId);
   const fm=empId?fm0.filter(f=>f.funcionario_id===empId||f.cobertura_id===empId):fm0,pr=empId?fm.filter(f=>f.funcionario_id===empId):fm;
-  const sab=days.filter(k=>parse(k).getDay()===6).map(k=>({k,itens:emps.map(e=>{const t=turnoDia(e,k);return t&&{id:e.id,nome:e.nome,en:t.en,sa:t.sa,h:horas(t.en,t.sa),falta:fm0.some(f=>f.funcionario_id===e.id&&f.data===k)}}).filter(Boolean).sort((a,b)=>a.en.localeCompare(b.en))}));
+  const sab=days.filter(k=>parse(k).getDay()===6).map(k=>({k,itens:emps.map(e=>{const t=turnoDia(e,k);return t&&{id:e.id,nome:e.nome,en:t.en,sa:t.sa,en2:t.en2,sa2:t.sa2,h:horasT(t),falta:fm0.some(f=>f.funcionario_id===e.id&&f.data===k)}}).filter(Boolean).sort((a,b)=>a.en.localeCompare(b.en))}));
   const func=emps.map(e=>{
     const fe=fm0.filter(f=>f.funcionario_id===e.id),ce=fm0.filter(f=>f.cobertura_id===e.id),dd=days.map(k=>({k,t:turnoDia(e,k)})).filter(x=>x.t);
-    const prev=dd.reduce((s,x)=>s+horas(x.t.en,x.t.sa),0),falt=fe.reduce((s,f)=>s+horasPrev(e,f.data),0);
+    const prev=dd.reduce((s,x)=>s+horasT(x.t),0),falt=fe.reduce((s,f)=>s+horasPrev(e,f.data),0);
     const cob=ce.map(f=>{const q=S.emps.find(x=>x.id===f.funcionario_id);return {k:f.data,quem:q?q.nome:'—',h:q?horasPrev(q,f.data):0}}),cobH=cob.reduce((s,c)=>s+c.h,0);
     return {e,fe,cob,cobH,prev,falt,trab:prev-falt+cobH,dias:dd,sabs:dd.filter(x=>parse(x.k).getDay()===6),
       pendTotal:pendSaldo(e.id),devMes:fe.reduce((s,f)=>s+ +f.horas_devidas,0),
       saldo:saldoDe(e.id),movs:S.saldo.filter(x=>x.funcionario_id===e.id&&x.data>=de&&x.data<=ate).sort((a,b)=>a.data.localeCompare(b.data))};
   });
   const mesInteiro=de===de.slice(0,7)+'-01'&&ate===mesRange(de.slice(0,7))[1],chave=(!empId&&mesInteiro)?'rel:'+de.slice(0,7):`relp:${empId||'todos'}:${de}:${ate}`;
-  return {de,ate,empId,chave,nota:nota(chave),fm,pendL:pendFaltas(empId),pagL:(S.pagH||[]).filter(p=>p.data>=de&&p.data<=ate&&(!empId||p.funcionario_id===empId)).sort((a,b)=>a.data.localeCompare(b.data)),fer:days.filter(k=>H[k]).map(k=>({k,n:H[k]})),ferEsc:days.filter(k=>H[k]).map(k=>{const fe=S.fmodo[k]==='fechado',itens=fe?[]:emps.map(e=>{const t=turnoDia(e,k);return t&&{id:e.id,nome:e.nome,en:t.en,sa:t.sa,h:horas(t.en,t.sa),falta:fm0.some(f=>f.funcionario_id===e.id&&f.data===k)}}).filter(Boolean).sort((a,b)=>a.en.localeCompare(b.en));return {k,n:H[k],modo:fe?'fechado':itens.length?'especial':'vazio',itens}}),sab,func,
+  return {de,ate,empId,chave,nota:nota(chave),fm,pendL:pendFaltas(empId),pagL:(S.pagH||[]).filter(p=>p.data>=de&&p.data<=ate&&(!empId||p.funcionario_id===empId)).sort((a,b)=>a.data.localeCompare(b.data)),fer:days.filter(k=>H[k]).map(k=>({k,n:H[k]})),ferEsc:days.filter(k=>H[k]).map(k=>{const fe=S.fmodo[k]==='fechado',itens=fe?[]:emps.map(e=>{const t=turnoDia(e,k);return t&&{id:e.id,nome:e.nome,en:t.en,sa:t.sa,en2:t.en2,sa2:t.sa2,h:horasT(t),falta:fm0.some(f=>f.funcionario_id===e.id&&f.data===k)}}).filter(Boolean).sort((a,b)=>a.en.localeCompare(b.en));return {k,n:H[k],modo:fe?'fechado':itens.length?'especial':'vazio',itens}}),sab,func,
     tot:{faltas:pr.filter(f=>!f.atestado).length,atest:pr.filter(f=>f.atestado).length,cob:empId?fm.filter(f=>f.cobertura_id===empId).length:fm.filter(f=>f.cobertura_id).length,
       pend:pendSaldo(empId)}};
 }
 function diaria(x){
   const R=[];
-  x.dias.forEach(d=>{const f=x.fe.find(f=>f.data===d.k);R.push({k:d.k,txt:f?`Faltou · ${f.motivo}${f.atestado?' (atestado)':''}`:`${d.t.en}-${d.t.sa} · ${fh(horas(d.t.en,d.t.sa))}${feriados(+d.k.slice(0,4))[d.k]?' · Feriado':''}`,h:f?0:horas(d.t.en,d.t.sa)})});
+  x.dias.forEach(d=>{const f=x.fe.find(f=>f.data===d.k);R.push({k:d.k,txt:f?`Faltou · ${f.motivo}${f.atestado?' (atestado)':''}`:`${txtT(d.t)} · ${fh(horasT(d.t))}${feriados(+d.k.slice(0,4))[d.k]?' · Feriado':''}`,h:f?0:horasT(d.t)})});
   x.fe.filter(f=>!x.dias.some(d=>d.k===f.data)).forEach(f=>R.push({k:f.data,txt:`Falta registrada · ${f.motivo}`,h:0}));
   x.cob.forEach(c=>R.push({k:c.k,txt:`Cobriu ${c.quem} · +${fh(c.h)}`,h:c.h}));
   return R.sort((a,b)=>a.k.localeCompare(b.k));
@@ -115,7 +120,7 @@ function conflitos(e,k,en,sa){
   const f=S.faltas.find(x=>x.funcionario_id===e.id&&x.data===k);
   if(f)out.push(`${e.nome} tem ${f.atestado?'atestado':'falta'} registrada em ${fmt(k)}.`);
   const ant=turnoDia(e,addDias(k,-1)),dep=turnoDia(e,addDias(k,1));
-  if(ant){const g=1440-minutos(ant.sa)+minutos(en);if(g<DESCANSO_IDEAL)out.push(`${e.nome} teria só ${fh(g/60)} de descanso desde o turno de ontem (terminou às ${ant.sa}). O ideal é ${DESCANSO_IDEAL/60}h.`)}
+  if(ant){const g=1440-minutos(ant.sa2||ant.sa)+minutos(en);if(g<DESCANSO_IDEAL)out.push(`${e.nome} teria só ${fh(g/60)} de descanso desde o turno de ontem (terminou às ${ant.sa2||ant.sa}). O ideal é ${DESCANSO_IDEAL/60}h.`)}
   if(dep){const g=1440-minutos(sa)+minutos(dep.en);if(g<DESCANSO_IDEAL)out.push(`${e.nome} teria só ${fh(g/60)} de descanso até o turno de amanhã (começa às ${dep.en}). O ideal é ${DESCANSO_IDEAL/60}h.`)}
   let seq=1;for(let i=1;i<=7&&turnoDia(e,addDias(k,-i));i++)seq++;for(let i=1;i<=7&&turnoDia(e,addDias(k,i));i++)seq++;
   if(seq>=7)out.push(`${e.nome} ficaria ${seq} dias seguidos trabalhando, sem folga.`);
@@ -197,6 +202,7 @@ async function load(){
     S.fmErro=!!fr.error;S.fmodo=fr.error?{}:Object.fromEntries(fr.data.map(r=>[r.data,r.modo]));
     const sf=await tudo('saldo_folgas','data'),an=await tudo('anotacoes','chave');
     S.v4Erro=!!(sf.error||an.error);S.saldo=sf.error?[]:sf.data;S.notas=an.error?{}:Object.fromEntries(an.data.map(r=>[r.chave,r.texto]));
+    const p6=await db.from('escalas_dia').select('entrada2').limit(1);S.v6Erro=!!p6.error;
     const ph=await tudo('pagamentos_horas','data');S.v5Erro=!!ph.error;S.pagH=ph.error?[]:ph.data;
     S.histOk=false;
     if(!S.dsOk){S.dsOk=true;await carregaDS()}
@@ -334,21 +340,30 @@ bind.escala=()=>{
     sheet(esc(e.nome)+' · '+fmt(k),b);
   });
 };
-function diaForm(k,e0,livre,fer){
+function diaForm(k,e0,livre,fer,dois){
   const l=S.emps.filter(e=>e.ativo).map(e=>[e.id,e.nome]);if(!l.length)return alert('Cadastre funcionários primeiro.');
-  const ov=e0&&S.dias.find(x=>x.funcionario_id===e0.id&&x.data===k);
-  modal(livre?'Registrar dia trabalhado':'Escalar em '+fmt(k),`<label>Funcionário<select name="fu">${opts(l,e0&&e0.id)}</select></label>${livre?`<label>Data<input type="date" name="dt" value="${k}"></label>`:''}<div class="row"><label class="grow">${livre?'Chegada':'Entrada'}<input type="time" name="en" value="${hhmm(ov&&ov.entrada)||'07:00'}"></label><label class="grow">Saída<input type="time" name="sa" value="${hhmm(ov&&ov.saida)||'12:00'}"></label></div><p class="mut"><small>${livre?'Digite os horários da folhinha dela.':'Para funcionário flexível, a saída é calculada pelas horas por dia (você pode ajustar).'}</small></p>`,async d=>{
+  const ov=e0&&S.dias.find(x=>x.funcionario_id===e0.id&&x.data===k),tem2=!!(ov&&ov.entrada2)||!!dois;
+  modal(livre?'Registrar dia trabalhado':'Escalar em '+fmt(k),`<label>Funcionário<select name="fu">${opts(l,e0&&e0.id)}</select></label>${livre?`<label>Data<input type="date" name="dt" value="${k}"></label>`:''}<div class="row"><label class="grow">${livre?'Chegada':'Entrada'}<input type="time" name="en" value="${hhmm(ov&&ov.entrada)||'07:00'}"></label><label class="grow">Saída<input type="time" name="sa" value="${hhmm(ov&&ov.saida)||'12:00'}"></label></div>${livre?'':`<div id="p2" style="${tem2?'':'display:none'}"><div class="row"><label class="grow">Volta às<input type="time" name="en2" value="${hhmm(ov&&ov.entrada2)||'14:00'}"></label><label class="grow">Sai às<input type="time" name="sa2" value="${hhmm(ov&&ov.saida2)||'16:00'}"></label></div></div><button type="button" class="ghost sm" id="tg2" style="margin:4px 0 8px">${tem2?'Remover o retorno (2º período)':'+ Sai e volta no mesmo dia (2 períodos)'}</button>`}<p class="mut"><small>${livre?'Digite os horários da folhinha dela.':'Para funcionário flexível, a saída é calculada pelas horas por dia (você pode ajustar).'}</small></p>`,async d=>{
     const g=n=>d.querySelector(`[name="${n}"]`),dt=livre?g('dt').value:k;
     if(!dt)throw Error('Informe a data.');
     if(!g('en').value||!g('sa').value)throw Error('Informe entrada e saída.');
     if(g('sa').value<=g('en').value)throw Error('A saída precisa ser depois da entrada.');
-    if(!livre)confirmaConflitos([{e:S.emps.find(x=>x.id===g('fu').value),k:dt,en:g('en').value,sa:g('sa').value}]);
-    await ck(db.from('escalas_dia').upsert({funcionario_id:g('fu').value,data:dt,entrada:g('en').value,saida:g('sa').value},{onConflict:'funcionario_id,data'}));
+    const d2=!livre&&d.querySelector('#p2').style.display!=='none',en2=d2?g('en2').value:'',sa2=d2?g('sa2').value:'';
+    if(d2){
+      if(!en2||!sa2)throw Error('Informe a hora de volta e a de saída do segundo período.');
+      if(sa2<=en2)throw Error('No segundo período, a saída precisa ser depois da volta.');
+      if(en2<=g('sa').value)throw Error('A volta precisa ser depois da primeira saída ('+g('sa').value+').');
+      if(S.v6Erro)throw Error('Para escalar em dois períodos, rode a migração 006 no Supabase (SQL Editor; veja o README).');
+    }
+    if(!livre)confirmaConflitos([{e:S.emps.find(x=>x.id===g('fu').value),k:dt,en:g('en').value,sa:d2?sa2:g('sa').value}]);
+    const p2=d2?{entrada2:en2,saida2:sa2}:(ov&&ov.entrada2?{entrada2:null,saida2:null}:{});
+    await ck(db.from('escalas_dia').upsert({funcionario_id:g('fu').value,data:dt,entrada:g('en').value,saida:g('sa').value,...p2},{onConflict:'funcionario_id,data'}));
     if(fer)await marcaEspecial(dt);
   });
   const d=[...document.querySelectorAll('dialog')].pop(),g=n=>d.querySelector(`[name="${n}"]`);
   const auto=()=>{const e=S.emps.find(x=>x.id===g('fu').value);if(e&&e.tipo==='flexivel'&&g('en').value){const [h,m]=g('en').value.split(':').map(Number),t=h*60+m+Math.round(e.horas_dia*60);g('sa').value=p2(Math.floor(t/60)%24)+':'+p2(t%60)}};
   g('en').oninput=auto;g('fu').onchange=auto;if(!ov&&!livre)auto();
+  if(!livre){const bx=d.querySelector('#p2'),bt=d.querySelector('#tg2');bt.onclick=()=>{const on=bx.style.display==='none';bx.style.display=on?'':'none';bt.textContent=on?'Remover o retorno (2º período)':'+ Sai e volta no mesmo dia (2 períodos)'}}
 }
 
 /* ===== js/tela-sabados.js ===== */
@@ -359,7 +374,7 @@ function vSabados(){
   <div class="row"><button class="grow" id="spdf">Baixar PDF do mês</button><button class="ghost grow" id="stxt">Copiar texto</button></div>
   ${sabadosDoMes(S.sm).map(k=>{const es=S.dias.filter(x=>x.data===k).sort((a,b)=>a.entrada.localeCompare(b.entrada));
     return `<div class="card"><div class="row" style="margin:0"><b class="grow" style="margin:0">Sábado ${fmt(k)}</b>${H[k]?`<span class="tag warn">${esc(H[k])}</span>`:''}</div>
-    ${es.map(x=>`<div class="it" data-sx="${x.id}"><div class="av">${esc((nome(x.funcionario_id)[0]||'?').toUpperCase())}</div><div class="grow"><b>${esc(nome(x.funcionario_id))}</b><br><small>${hhmm(x.entrada)} às ${hhmm(x.saida)}</small></div></div>`).join('')||'<p class="mut"><small>Nada escalado ainda.</small></p>'}
+    ${es.map(x=>`<div class="it" data-sx="${x.id}"><div class="av">${esc((nome(x.funcionario_id)[0]||'?').toUpperCase())}</div><div class="grow"><b>${esc(nome(x.funcionario_id))}</b><br><small>${txtDia(x)}</small></div></div>`).join('')||'<p class="mut"><small>Nada escalado ainda.</small></p>'}
     ${notaHtml('sab:'+k)}
     <div class="row"><button class="ghost grow sm" data-t2="${k}">Escalar dois turnos</button><button class="ghost grow sm" data-t1="${k}">Adicionar pessoa</button></div>
     <div class="row"><button class="ghost grow sm" data-cp="${k}">Copiar de outro sábado</button><button class="ghost grow sm" data-nt="${k}">${nota('sab:'+k)?'Editar anotação':'Anotação'}</button></div></div>`}).join('')}`;
@@ -627,6 +642,7 @@ function feriadoSheet(k){
   const nm=feriados(+k.slice(0,4))[k]||'Feriado';
   sheet(fmt(k)+' · '+esc(nm),[
     ['Escalar dois turnos (manhã e tarde)',()=>turnosForm(k,true)],
+    ['Escalar uma pessoa em dois períodos (entra, sai e volta)',()=>diaForm(k,null,false,true,true)],
     ['Escalar várias pessoas no mesmo horário',()=>multiForm(k)],
     ['Adicionar ou alterar uma pessoa',()=>diaForm(k,null,false,true)],
     ['Marcar como fechado (ninguém trabalha)',async()=>{if(await setModo(k,'fechado'))load()}],
@@ -642,7 +658,7 @@ function multiForm(k){
     if(!en||!sa||sa<=en)throw Error('Confira a entrada e a saída.');
     const ids=at.filter(e=>g('q_'+e.id).checked).map(e=>e.id);if(!ids.length)throw Error('Marque pelo menos uma pessoa.');
     confirmaConflitos(ids.map(id=>({e:S.emps.find(x=>x.id===id),k,en,sa})));
-    await ck(db.from('escalas_dia').upsert(ids.map(id=>({funcionario_id:id,data:k,entrada:en,saida:sa})),{onConflict:'funcionario_id,data'}));
+    await ck(db.from('escalas_dia').upsert(ids.map(id=>({funcionario_id:id,data:k,entrada:en,saida:sa,...(S.v6Erro?{}:{entrada2:null,saida2:null})})),{onConflict:'funcionario_id,data'}));
     await marcaEspecial(k);
   },'Salvar escala');
   const d=[...document.querySelectorAll('dialog')].pop();
@@ -657,7 +673,7 @@ function vFerEscala(){
   ${S.fmErro?'<div class="card"><b>Para usar "Fechado"</b><small>Rode a migração 003 no Supabase (SQL Editor; veja o README). Montar a escala dos feriados já funciona sem isso.</small></div>':''}
   ${lista.map(([k,nm])=>{const fe=S.fmodo[k]==='fechado',itens=fe?[]:at.map(e=>({e,t:turnoDia(e,k)})).filter(x=>x.t).sort((a,b)=>a.t.en.localeCompare(b.t.en)),md=fe?'fechado':itens.length?'especial':'vazio',[c,t]=tg[md];
     return `<div class="card"><div class="row" style="margin:0"><div class="grow"><b>${fmt(k)} · ${DIAS[parse(k).getDay()]}</b><br><small>${esc(nm)}</small></div><span class="tag ${c}">${t}</span></div>
-    ${md==='fechado'?'<p class="mut"><small>Ninguém trabalha neste feriado.</small></p>':itens.map(x=>`<div class="it" data-fk="${k}"><div class="av">${esc((x.e.nome[0]||'?').toUpperCase())}</div><div class="grow"><b>${esc(x.e.nome)}</b><br><small>${x.t.en} às ${x.t.sa} · ${fh(horas(x.t.en,x.t.sa))}</small></div><span class="chv">${ic('chev')}</span></div>`).join('')||'<p class="mut"><small>Ninguém escalado.</small></p>'}
+    ${md==='fechado'?'<p class="mut"><small>Ninguém trabalha neste feriado.</small></p>':itens.map(x=>`<div class="it" data-fk="${k}"><div class="av">${esc((x.e.nome[0]||'?').toUpperCase())}</div><div class="grow"><b>${esc(x.e.nome)}</b><br><small>${txtAs(x.t)} · ${fh(horasT(x.t))}</small></div><span class="chv">${ic('chev')}</span></div>`).join('')||'<p class="mut"><small>Ninguém escalado.</small></p>'}
     ${notaHtml('fer:'+k)}
     <div class="row"><button class="grow" data-fs="${k}">${md==='vazio'?'Montar escala do feriado':'Editar escala do feriado'}</button></div><div class="row"><button class="ghost grow sm" data-fp="${k}">Baixar PDF deste feriado</button><button class="ghost grow sm" data-ft="${k}">Copiar texto</button></div><div class="row"><button class="ghost grow sm" data-fn="${k}">${nota('fer:'+k)?'Editar anotação':'Anotação'}</button></div></div>`}).join('')||'<div class="card mut">Nenhum feriado neste mês.</div>'}`;
 }
@@ -772,8 +788,8 @@ function detalhe(x){
   if(x.falt>0)L.push(kv('Descontadas por faltas','−'+fh(x.falt)));
   if(x.cobH>0)L.push(kv('Somadas por coberturas','+'+fh(x.cobH)));
   L.push(kv(flex?'Dias trabalhados':'Dias escalados',x.dias.length));
-  if(flex&&x.dias.length)L.push(kv('Registros',x.dias.map(d=>`${dm(d.k)} ${d.t.en}–${d.t.sa}`).join('<br>')));
-  if(!flex&&x.sabs.length)L.push(kv('Sábados',x.sabs.map(s=>`${dm(s.k)} ${s.t.en}–${s.t.sa}`).join('<br>')));
+  if(flex&&x.dias.length)L.push(kv('Registros',x.dias.map(d=>`${dm(d.k)} ${txtT(d.t,'–')}`).join('<br>')));
+  if(!flex&&x.sabs.length)L.push(kv('Sábados',x.sabs.map(s=>`${dm(s.k)} ${txtT(s.t,'–')}`).join('<br>')));
   if(x.fe.length)L.push(kv('Faltas',x.fe.map(f=>`${dm(f.data)} ${esc(f.motivo)}${f.atestado?' (atestado)':''}`).join('<br>')));
   if(x.cob.length)L.push(kv('Coberturas feitas',x.cob.map(c=>`${dm(c.k)} cobriu ${esc(c.quem)} (${fh(c.h)})`).join('<br>')));
   if(x.devMes>0||x.pendTotal>0)L.push(kv('Horas devendo',`${fh(x.devMes)} no período<br>${fh(x.pendTotal)} pendentes no total`));
@@ -798,13 +814,13 @@ function pendCard0(D){
 function ferCard(D){
   if(!D.ferEsc||!D.ferEsc.length)return '';
   const tg={vazio:['gr','A definir'],especial:['ok','Escalado'],fechado:['bad','Fechado']};
-  return `<div class="card"><b>Feriados</b>${D.ferEsc.map(f=>{const [c,t]=tg[f.modo];return `<div style="padding:10px 0;border-top:1px solid var(--line)"><div class="row" style="margin:0"><b class="grow">${fmt(f.k)} · ${esc(f.n)}</b><span class="tag ${c}">${t}</span></div>${f.modo==='fechado'?'<small class="mut">Ninguém trabalha.</small>':f.itens.map(i=>kv(esc(i.nome)+(i.falta?' · faltou':''),`${i.en}–${i.sa} · ${fh(i.h)}`)).join('')||'<small class="mut">Ninguém escalado.</small>'}</div>`}).join('')}</div>`;
+  return `<div class="card"><b>Feriados</b>${D.ferEsc.map(f=>{const [c,t]=tg[f.modo];return `<div style="padding:10px 0;border-top:1px solid var(--line)"><div class="row" style="margin:0"><b class="grow">${fmt(f.k)} · ${esc(f.n)}</b><span class="tag ${c}">${t}</span></div>${f.modo==='fechado'?'<small class="mut">Ninguém trabalha.</small>':f.itens.map(i=>kv(esc(i.nome)+(i.falta?' · faltou':''),`${txtT(i,'–')} · ${fh(i.h)}`)).join('')||'<small class="mut">Ninguém escalado.</small>'}</div>`}).join('')}</div>`;
 }
 const notaCard=D=>`<div class="card"><div class="row" style="margin:0"><b class="grow" style="margin:0">Anotações</b><button class="ghost sm" data-nr="1">${D.nota?'Editar':'Escrever'}</button></div>${D.nota?`<div class="note" style="margin-top:8px">${esc(D.nota)}</div>`:'<small class="mut">Escreva aqui o que quiser. Aparece no PDF e no texto do relatório.</small>'}</div>`;
 const saldoCard=x=>`<div class="card"><b>Saldo de folgas</b>${x.movs.map(m=>kv(`${dm(m.data)} · ${m.tipo==='credito'?'recebida':'usada'}`,`${m.tipo==='credito'?'+':'-'}${fn(+m.dias)}`+(m.anotacao?`<br><small>${esc(m.anotacao)}</small>`:''))).join('')}${kv('Saldo atual',fd(x.saldo))}</div>`;
 function corpoEquipe(D){
   return `<div class="stats" style="grid-template-columns:repeat(2,1fr)"><div class="stat tint t4"><b>${D.tot.faltas}</b>faltas sem atestado</div><div class="stat tint t1"><b>${D.tot.atest}</b>atestados</div><div class="stat tint t2"><b>${D.tot.cob}</b>coberturas</div><div class="stat tint t3"><b>${fh(D.tot.pend)}</b>horas devidas pendentes</div></div>
-  <div class="card"><b>Sábados</b>${D.sab.map(s=>`<div style="padding:10px 0;border-top:1px solid var(--line)"><b>${fmt(s.k)}</b>${s.itens.map(i=>kv(esc(i.nome)+(i.falta?' · faltou':''),`${i.en}–${i.sa} · ${fh(i.h)}`)).join('')||'<br><small class="mut">Ninguém escalado.</small>'}</div>`).join('')||'<p class="mut">Nenhum sábado neste período.</p>'}</div>
+  <div class="card"><b>Sábados</b>${D.sab.map(s=>`<div style="padding:10px 0;border-top:1px solid var(--line)"><b>${fmt(s.k)}</b>${s.itens.map(i=>kv(esc(i.nome)+(i.falta?' · faltou':''),`${txtT(i,'–')} · ${fh(i.h)}`)).join('')||'<br><small class="mut">Ninguém escalado.</small>'}</div>`).join('')||'<p class="mut">Nenhum sábado neste período.</p>'}</div>
   ${ferCard(D)}${faltasCard(D)}${pendCard(D)}<b style="display:block;margin:4px 6px 8px">Por funcionário</b>${D.func.map(detalhe).join('')||'<div class="card mut">Nenhum funcionário.</div>'}${notaRel(D)}`;
 }
 function corpoFunc(D){
@@ -875,8 +891,8 @@ function linhasRel(D){
     L.push('',`TOTAL: ${diasTrab(x)} dias, ${fh(x.trab)}`);
   }else{
     L.push(`Faltas sem atestado: ${t.faltas} | Atestados: ${t.atest} | Coberturas: ${t.cob} | Horas devidas pendentes: ${fh(t.pend)}`,'','## SÁBADOS');
-    D.sab.forEach(s=>L.push(`${fmt(s.k)}: `+(s.itens.map(i=>`${i.nome} ${i.en}-${i.sa} (${fh(i.h)})${i.falta?' FALTOU':''}`).join('; ')||'ninguém escalado')));
-    if(D.ferEsc&&D.ferEsc.length){L.push('','## FERIADOS');D.ferEsc.forEach(f=>L.push(`${fmt(f.k)} ${f.n} (${f.modo==='fechado'?'fechado':f.modo==='especial'?'escalado':'a definir'}): `+(f.modo==='fechado'?'ninguém trabalha':(f.itens.map(i=>`${i.nome} ${i.en}-${i.sa} (${fh(i.h)})`).join('; ')||'ninguém escalado'))))}
+    D.sab.forEach(s=>L.push(`${fmt(s.k)}: `+(s.itens.map(i=>`${i.nome} ${txtT(i)} (${fh(i.h)})${i.falta?' FALTOU':''}`).join('; ')||'ninguém escalado')));
+    if(D.ferEsc&&D.ferEsc.length){L.push('','## FERIADOS');D.ferEsc.forEach(f=>L.push(`${fmt(f.k)} ${f.n} (${f.modo==='fechado'?'fechado':f.modo==='especial'?'escalado':'a definir'}): `+(f.modo==='fechado'?'ninguém trabalha':(f.itens.map(i=>`${i.nome} ${txtT(i)} (${fh(i.h)})`).join('; ')||'ninguém escalado'))))}
   }
   L.push('','## FALTAS E COBERTURAS');
   if(!D.fm.length)L.push('Nenhuma falta no período.');
@@ -894,7 +910,7 @@ const textoRel=D=>linhasRel(D).map(l=>l.replace(/^## /,'')).join('\n');
 const difer=it=>it.length>1&&it[0].en!==it[it.length-1].en;
 function textoSabados(ym,ids){
   const [de,ate]=mesRange(ym),D=relDados(de,ate),L=['ESCALA DOS SÁBADOS - '+mesNome(ym).toUpperCase(),''];
-  D.sab.forEach(s=>{const it=s.itens.filter(i=>ids.includes(i.id));L.push('Sábado '+dm(s.k));if(!it.length)L.push('  sem escala definida');it.forEach((i,n)=>L.push(`  ${i.en} às ${i.sa} - ${i.nome}${difer(it)?(n===0?' (abre)':n===it.length-1?' (fecha)':''):''}`));if(nota('sab:'+s.k))L.push('  Obs.: '+nota('sab:'+s.k));L.push('')});
+  D.sab.forEach(s=>{const it=s.itens.filter(i=>ids.includes(i.id));L.push('Sábado '+dm(s.k));if(!it.length)L.push('  sem escala definida');it.forEach((i,n)=>L.push(`  ${txtAs(i)} - ${i.nome}${difer(it)?(n===0?' (abre)':n===it.length-1?' (fecha)':''):''}`));if(nota('sab:'+s.k))L.push('  Obs.: '+nota('sab:'+s.k));L.push('')});
   return L.join('\n').trim();
 }
 function textoFeriados(ym,ids,only){
@@ -902,7 +918,7 @@ function textoFeriados(ym,ids,only){
   if(!D.ferEsc.length)L.push('Nenhum feriado neste mês.');
   D.ferEsc.filter(f=>!only||f.k===only).forEach(f=>{const it=f.itens.filter(i=>ids.includes(i.id));L.push(`${fmt(f.k)} ${DIAS[parse(f.k).getDay()]} - ${f.n}`);
     if(f.modo==='fechado')L.push('  FECHADO - ninguém trabalha');
-    else{if(!it.length)L.push('  sem escala definida');it.forEach((i,n)=>L.push(`  ${i.en} às ${i.sa} - ${i.nome}${difer(it)?(n===0?' (abre)':n===it.length-1?' (fecha)':''):''}`))}
+    else{if(!it.length)L.push('  sem escala definida');it.forEach((i,n)=>L.push(`  ${txtAs(i)} - ${i.nome}${difer(it)?(n===0?' (abre)':n===it.length-1?' (fecha)':''):''}`))}
     if(nota('fer:'+f.k))L.push('  Obs.: '+nota('fer:'+f.k));
     L.push('')});
   return L.join('\n').trim();
@@ -953,7 +969,7 @@ function baixarSabadosPDF(ym,ids){
     if(!it.length){ft(10.5,false);T(K.mut);doc.text('Sem escala definida',rx,cy+1.2)}
     it.forEach((i,k)=>{
       const base=y+(rh-n*10)/2+7+k*10;
-      ft(12,true);T(K.ink);doc.text(L(i.en+' - '+i.sa),rx,base);
+      ft(12,true);T(K.ink);doc.text(L(i.en+' - '+i.sa),rx,base);if(i.en2){ft(9.5,true);T(K.mut);doc.text(L('e '+i.en2+' - '+i.sa2),rx,base+4.6);T(K.ink)}
       ft(12,false);let nm=L(i.nome);const mw=CW-34-8-44-34;while(nm.length>1&&doc.getTextWidth(nm)>mw)nm=nm.slice(0,-1);doc.text(nm,rx+44,base);
       if(difer(it)&&(k===0||k===it.length-1)){const lab=k===0?'Abre':'Fecha';ft(7.5,true);const pw=doc.getTextWidth(lab)+6;pill(M+CW-pw-4,base,lab,k===0?K.ok:K.info,k===0?K.okb:K.infob)}
     });
@@ -991,7 +1007,7 @@ function baixarFeriadosPDF(ym,ids,only){
     else if(!it.length){ft(10.5,false);T(K.mut);doc.text('Sem escala definida',rx,y+20)}
     else it.forEach((i,k)=>{
       const base=y+19+k*10;
-      ft(12,true);T(K.ink);doc.text(L(i.en+' - '+i.sa),rx,base);
+      ft(12,true);T(K.ink);doc.text(L(i.en+' - '+i.sa),rx,base);if(i.en2){ft(9.5,true);T(K.mut);doc.text(L('e '+i.en2+' - '+i.sa2),rx,base+4.6);T(K.ink)}
       ft(12,false);let nn=L(i.nome);const m2=CW-34-8-44-34;while(nn.length>1&&doc.getTextWidth(nn)>m2)nn=nn.slice(0,-1);doc.text(nn,rx+44,base);
       if(difer(it)&&(k===0||k===it.length-1)){const lb=k===0?'Abre':'Fecha';ft(7.5,true);const p2=doc.getTextWidth(lb)+6;pill(M+CW-p2-4,base,lb,k===0?K.ok:K.info,k===0?K.okb:K.infob)}
     });
@@ -1069,11 +1085,11 @@ function baixarPDF(D){
   }else{
     const t=D.tot;kpis([{n:t.faltas,l:'faltas sem atestado',c:K.bad},{n:t.atest,l:'atestados',c:K.ok},{n:t.cob,l:'coberturas',c:K.info},{n:fh(t.pend),l:'horas devidas pendentes',c:K.warn}]);
     secao('Sábados');
-    const rows=[];D.sab.forEach(s=>{if(!s.itens.length)rows.push({top:true,c:[fmt(s.k),{t:'Ninguém escalado',k:K.mut},'','']});else s.itens.forEach((i,n)=>rows.push({top:n===0,c:[n===0?{t:fmt(s.k),b:true}:'',{t:i.nome+(i.falta?'  (faltou)':''),k:i.falta?K.bad:K.ink,b:i.falta},i.en+' - '+i.sa,{t:fh(i.h),b:true}]}))});
+    const rows=[];D.sab.forEach(s=>{if(!s.itens.length)rows.push({top:true,c:[fmt(s.k),{t:'Ninguém escalado',k:K.mut},'','']});else s.itens.forEach((i,n)=>{rows.push({top:n===0,c:[n===0?{t:fmt(s.k),b:true}:'',{t:i.nome+(i.falta?'  (faltou)':''),k:i.falta?K.bad:K.ink,b:i.falta},i.en+' - '+i.sa,{t:fh(i.h),b:true}]});if(i.en2)rows.push({c:['',{t:'   retorno',k:K.mut},i.en2+' - '+i.sa2,'']})})});
     tabela([{t:'Sábado',w:34},{t:'Funcionário',w:72},{t:'Horário',w:46},{t:'Horas',w:30,al:'r'}],rows.length?rows:[{c:['','Nenhum sábado no período.','','']}]);
     if(D.ferEsc.length){secao('Feriados');const fr=[];D.ferEsc.forEach(f=>{const lb=f.modo==='fechado'?' (fechado)':f.modo==='vazio'?' (a definir)':'';
       if(f.modo==='fechado'||!f.itens.length)fr.push({top:true,c:[{t:fmt(f.k),b:true},f.n+lb,{t:f.modo==='fechado'?'Ninguém trabalha':'Ninguém escalado',k:f.modo==='fechado'?K.bad:K.mut},'','']});
-      else f.itens.forEach((i,n)=>fr.push({top:n===0,c:[n===0?{t:fmt(f.k),b:true}:'',n===0?f.n+lb:'',{t:i.nome+(i.falta?'  (faltou)':''),k:i.falta?K.bad:K.ink,b:i.falta},i.en+' - '+i.sa,{t:fh(i.h),b:true}]}))});
+      else f.itens.forEach((i,n)=>{fr.push({top:n===0,c:[n===0?{t:fmt(f.k),b:true}:'',n===0?f.n+lb:'',{t:i.nome+(i.falta?'  (faltou)':''),k:i.falta?K.bad:K.ink,b:i.falta},i.en+' - '+i.sa,{t:fh(i.h),b:true}]});if(i.en2)fr.push({c:['','',{t:'   retorno',k:K.mut},i.en2+' - '+i.sa2,'']})})});
       tabela([{t:'Data',w:26},{t:'Feriado',w:50},{t:'Funcionário',w:46},{t:'Horário',w:34},{t:'Horas',w:26,al:'r'}],fr)}
   }
   secao('Faltas e coberturas');
