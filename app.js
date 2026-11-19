@@ -1,6 +1,6 @@
 /* ===== js/base.js ===== */
 /* Base: conexão, estado, utilitários de data/texto, ícones e cálculo dos feriados */
-const APP_VERSAO = '10 · 19/11/2026';
+const APP_VERSAO = '11 · 19/11/2026';
 const db = supabase.createClient(CFG.url, CFG.key);
 const $ = s => document.querySelector(s);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -53,6 +53,7 @@ function situ(e,k){
   const sc=S.esc.find(x=>x.funcionario_id===e.id&&x.dia_semana===parse(k).getDay());
   let sub,tag='',work=false;
   if(t){sub=txtAs(t);work=true}
+  else if(e.data_inicio&&k<e.data_inicio){sub='Começa em '+fmt(e.data_inicio);tag='<span class="tag gr">Ainda não começou</span>'}
   else if(e.tipo==='flexivel')sub='Não escalada neste dia';
   else if(md==='fechado'){sub='Fechado (feriado)';tag='<span class="tag gr">Fechado</span>'}
   else if(md==='especial')sub='Fora da escala do feriado';
@@ -73,6 +74,7 @@ function turnoDia(e,k){
   const ov=S.dias.find(x=>x.funcionario_id===e.id&&x.data===k);
   if(ov)return {en:hhmm(ov.entrada),sa:hhmm(ov.saida),...(ov.entrada2&&ov.saida2?{en2:hhmm(ov.entrada2),sa2:hhmm(ov.saida2)}:{})};
   if(e.tipo==='flexivel'||md==='especial')return null;
+  if(e.data_inicio&&k<e.data_inicio)return null; // ainda não tinha começado
   const sc=S.esc.find(x=>x.funcionario_id===e.id&&x.dia_semana===parse(k).getDay());
   return sc&&!sc.folga&&sc.entrada&&sc.saida?{en:hhmm(sc.entrada),sa:hhmm(sc.saida)}:null;
 }
@@ -87,7 +89,7 @@ function setMes(n){const d=new Date(),a=new Date(d.getFullYear(),d.getMonth()+n,
 function relDados(de,ate,empId){
   const days=diasEntre(de,ate),H=feriados(...new Set(days.map(k=>+k.slice(0,4))));
   const fm0=S.faltas.filter(f=>f.data>=de&&f.data<=ate).sort((a,b)=>a.data.localeCompare(b.data));
-  let emps=S.emps.filter(e=>e.ativo||fm0.some(f=>f.funcionario_id===e.id||f.cobertura_id===e.id)||S.dias.some(x=>x.funcionario_id===e.id&&x.data>=de&&x.data<=ate));
+  let emps=S.emps.filter(e=>(e.ativo&&(!e.data_inicio||e.data_inicio<=ate))||fm0.some(f=>f.funcionario_id===e.id||f.cobertura_id===e.id)||S.dias.some(x=>x.funcionario_id===e.id&&x.data>=de&&x.data<=ate));
   if(empId)emps=emps.filter(e=>e.id===empId);
   const fm=empId?fm0.filter(f=>f.funcionario_id===empId||f.cobertura_id===empId):fm0,pr=empId?fm.filter(f=>f.funcionario_id===empId):fm;
   const sab=days.filter(k=>parse(k).getDay()===6).map(k=>({k,itens:emps.map(e=>{const t=turnoDia(e,k);return t&&{id:e.id,nome:e.nome,en:t.en,sa:t.sa,en2:t.en2,sa2:t.sa2,h:horasT(t),falta:fm0.some(f=>f.funcionario_id===e.id&&f.data===k)}}).filter(Boolean).sort((a,b)=>a.en.localeCompare(b.en))}));
@@ -95,7 +97,7 @@ function relDados(de,ate,empId){
     const fe=fm0.filter(f=>f.funcionario_id===e.id),ce=fm0.filter(f=>f.cobertura_id===e.id),dd=days.map(k=>({k,t:turnoDia(e,k)})).filter(x=>x.t);
     const prev=dd.reduce((s,x)=>s+horasT(x.t),0),falt=fe.reduce((s,f)=>s+horasPrev(e,f.data),0);
     const cob=ce.map(f=>{const q=S.emps.find(x=>x.id===f.funcionario_id);return {k:f.data,quem:q?q.nome:'—',h:q?horasPrev(q,f.data):0}}),cobH=cob.reduce((s,c)=>s+c.h,0);
-    return {e,fe,cob,cobH,prev,falt,trab:prev-falt+cobH,dias:dd,sabs:dd.filter(x=>parse(x.k).getDay()===6),
+    return {e,ini:e.data_inicio||null,fe,cob,cobH,prev,falt,trab:prev-falt+cobH,dias:dd,sabs:dd.filter(x=>parse(x.k).getDay()===6),
       pendTotal:pendSaldo(e.id),devMes:fe.reduce((s,f)=>s+ +f.horas_devidas,0),
       saldo:saldoDe(e.id),movs:S.saldo.filter(x=>x.funcionario_id===e.id&&x.data>=de&&x.data<=ate).sort((a,b)=>a.data.localeCompare(b.data))};
   });
@@ -449,7 +451,7 @@ async function semSabadoFixo(){
 }
 function vFunc(){
   const l=[...S.emps].sort((a,b)=>b.ativo-a.ativo);
-  return `${S.esc.some(x=>x.dia_semana===6&&!x.folga)?'<div class="card"><b>Sábado na escala fixa</b><small>Alguns funcionários ainda têm sábado como dia fixo de trabalho.</small><button class="ghost" id="nosat" style="width:100%;margin-top:8px">Tirar sábado da escala fixa de todos</button></div>':''}<div class="card"><b>${S.emps.filter(e=>e.ativo).length} funcionários ativos</b>${l.map(e=>`<div class="it" data-e="${e.id}"><div class="av">${esc((e.nome[0]||'?').toUpperCase())}</div><div class="grow"><b>${esc(e.nome)}</b><br><small>${e.tipo==='flexivel'?`Flexível · ${e.dias_semana} dias por semana · ${e.horas_dia}h`:esc(e.cargo||'Sem cargo')}${e.telefone?' · '+esc(e.telefone):''}</small></div>${e.ativo?'':'<span class="tag gr">inativo</span>'}</div>`).join('')||'<p class="mut">Toque no + para adicionar o primeiro funcionário.</p>'}</div>`;
+  return `${S.esc.some(x=>x.dia_semana===6&&!x.folga)?'<div class="card"><b>Sábado na escala fixa</b><small>Alguns funcionários ainda têm sábado como dia fixo de trabalho.</small><button class="ghost" id="nosat" style="width:100%;margin-top:8px">Tirar sábado da escala fixa de todos</button></div>':''}<div class="card"><b>${S.emps.filter(e=>e.ativo).length} funcionários ativos</b>${l.map(e=>`<div class="it" data-e="${e.id}"><div class="av">${esc((e.nome[0]||'?').toUpperCase())}</div><div class="grow"><b>${esc(e.nome)}</b><br><small>${e.tipo==='flexivel'?`Flexível · ${e.dias_semana} dias por semana · ${e.horas_dia}h`:esc(e.cargo||'Sem cargo')}${e.telefone?' · '+esc(e.telefone):''}${e.data_inicio?' · início '+fmt(e.data_inicio):''}</small></div>${e.ativo?'':'<span class="tag gr">inativo</span>'}</div>`).join('')||'<p class="mut">Toque no + para adicionar o primeiro funcionário.</p>'}</div>`;
 }
 bind.func=()=>document.querySelectorAll('.it[data-e]').forEach(l=>l.onclick=()=>{
   const e=S.emps.find(x=>x.id===l.dataset.e);
@@ -461,7 +463,7 @@ function empForm(e){
     return `<div class="dia"><label class="dl"><input type="checkbox" name="f${i}" ${on?'checked':''}><b>${DIAS_L[i]}</b></label><div class="hrs"><input type="time" name="e${i}" value="${hhmm(r&&r.entrada)||'08:00'}"><input type="time" name="s${i}" value="${hhmm(r&&r.saida)||'17:00'}"></div></div>`}).join('');
   const fx=e&&e.tipo==='flexivel';
   modal(e?'Editar funcionário':'Novo funcionário',
-    `<label>Nome<input name="nome" value="${esc(e&&e.nome)}"></label><label>Cargo<input name="cargo" value="${esc(e&&e.cargo)}"></label><label>Telefone<input name="tel" value="${esc(e&&e.telefone)}"></label>
+    `<label>Nome<input name="nome" value="${esc(e&&e.nome)}"></label><label>Cargo<input name="cargo" value="${esc(e&&e.cargo)}"></label><label>Telefone<input name="tel" value="${esc(e&&e.telefone)}"></label><label>Começou a trabalhar em (opcional)<input type="date" name="ini" value="${(e&&e.data_inicio)||''}"></label><p class="mut" style="margin:-4px 0 8px"><small>Para quem entrou recentemente: a escala fixa só conta a partir desse dia. Deixe em branco para quem já trabalha há tempo.</small></p>
     <label>Tipo de escala<select name="tp"><option value="fixo" ${fx?'':'selected'}>Fixa: dias e horários da semana</option><option value="flexivel" ${fx?'selected':''}>Flexível: X dias por semana, horário livre</option></select></label>
     <div id="bx"><h4 style="margin:10px 0 2px">Dias fixos de trabalho</h4><p class="mut" style="margin:0 0 6px"><small>Marque só os dias em que ele trabalha toda semana. Sábado alternado: deixe desmarcado e use a Escala dos sábados.</small></p>${rows}</div>
     <div id="bf" style="display:none"><div class="row"><label class="grow">Dias por semana<input type="number" min="1" max="7" name="ds" value="${e?e.dias_semana:3}"></label><label class="grow">Horas por dia<input type="number" step="0.25" min="1" name="hd" value="${e?e.horas_dia:5}"></label></div><p class="mut"><small>Você escolhe o dia e a hora de entrada de cada semana na aba Escala.</small></p></div>`,
@@ -469,8 +471,10 @@ function empForm(e){
       const g=n=>d.querySelector(`[name="${n}"]`),flex=g('tp').value==='flexivel';
       if(!g('nome').value.trim())throw Error('Informe o nome.');
       const p={nome:g('nome').value.trim(),cargo:g('cargo').value.trim()||null,telefone:g('tel').value.trim()||null,tipo:g('tp').value,dias_semana:+g('ds').value||3,horas_dia:+g('hd').value||5};
+      const ini=g('ini').value;if(ini||(S.emps[0]&&'data_inicio' in S.emps[0]))p.data_inicio=ini||null;
       let id=e&&e.id;
-      if(id)await ck(db.from('funcionarios').update(p).eq('id',id));else id=(await ck(db.from('funcionarios').insert(p).select().single())).data.id;
+      try{if(id)await ck(db.from('funcionarios').update(p).eq('id',id));else id=(await ck(db.from('funcionarios').insert(p).select().single())).data.id}
+      catch(er){if(/data_inicio/.test(er.message))throw Error('Para usar a data de início, rode a migração 007 no Supabase (SQL Editor; veja o README).');throw er}
       if(!flex){const l=[0,1,2,3,4,5,6].map(i=>({funcionario_id:id,dia_semana:i,folga:!g('f'+i).checked,entrada:g('e'+i).value||null,saida:g('s'+i).value||null}));await ck(db.from('escalas').upsert(l,{onConflict:'funcionario_id,dia_semana'}))}
     });
   const d=[...document.querySelectorAll('dialog')].pop(),tg=()=>{const f=d.querySelector('[name="tp"]').value==='flexivel';d.querySelector('#bx').style.display=f?'none':'';d.querySelector('#bf').style.display=f?'':'none'};
@@ -784,6 +788,7 @@ async function restauraBackup(e){
 /* Telas: Relatório (mês, funcionário e período) */
 function detalhe(x){
   const e=x.e,flex=e.tipo==='flexivel',L=[];
+  if(e.data_inicio)L.push(kv('Início de trabalho',fmt(e.data_inicio)+(e.data_inicio>=S.rp.de?'<br><small class="mut">Os dias anteriores não entram nas horas previstas.</small>':'')));
   L.push(kv('Horas trabalhadas',fh(x.trab)),kv('Previstas na escala',fh(x.prev)));
   if(x.falt>0)L.push(kv('Descontadas por faltas','−'+fh(x.falt)));
   if(x.cobH>0)L.push(kv('Somadas por coberturas','+'+fh(x.cobH)));
@@ -901,6 +906,8 @@ function linhasRel(D){
   D.fm.forEach(f=>L.push(`${fmt(f.data)} — ${nome(f.funcionario_id)}: ${f.motivo}${f.atestado?' (com atestado)':' (sem atestado)'}${+f.horas_devidas>0?`, deve ${fh(+f.horas_devidas)}${' ('+estadoHoras(f)+')'}`:''}${f.cobertura_id?`, coberto por ${nome(f.cobertura_id)}`:', sem cobertura'}${f.observacao?` — ${f.observacao}`:''}`));
   if(D.pendL&&D.pendL.length){L.push('','## HORAS DEVIDAS PENDENTES');D.pendL.forEach(f=>{L.push(nome(f.funcionario_id),`${fmt(f.data)} - ${f.motivo}`,f.cobertura_id?`Coberto por ${nome(f.cobertura_id)}`:'Sem cobertura',`Deve ${fh(f.restante)}`+(f.pago>0?` (já pagou ${fh(f.pago)} de ${fh(f.total)})`:''));if(f.observacao)L.push(f.observacao);L.push('')})}
   if(D.pagL&&D.pagL.length){L.push('','## HORAS PAGAS NO PERÍODO');D.pagL.forEach(p=>{L.push(nome(p.funcionario_id),`${fmt(p.data)} - Pagou ${fh(+p.horas)}${p.entrada&&p.saida?` (chegou ${hhmm(p.entrada)}, saiu ${hhmm(p.saida)})`:''}`);if(p.observacao)L.push(p.observacao);L.push('')})}
+  const ini=D.func.filter(y=>y.ini&&y.ini>=D.de);
+  if(ini.length){L.push('','## INÍCIO DE TRABALHO');ini.forEach(y=>L.push(`${y.e.nome}: começou em ${fmt(y.ini)} (os dias anteriores não entram nas horas previstas)`))}
   if(!D.empId){L.push('','## POR FUNCIONÁRIO');D.func.forEach(y=>L.push(`${y.e.nome}: ${fh(y.trab)} trabalhadas (previstas ${fh(y.prev)}${y.falt>0?`, -${fh(y.falt)} por faltas`:''}${y.cobH>0?`, +${fh(y.cobH)} por coberturas`:''}) | ${y.dias.length} dias | ${y.fe.length} falta(s) | devendo ${fh(y.pendTotal)}`))}
   const sd=D.func.filter(y=>y.saldo!==0||y.movs.length);
   if(sd.length){L.push('','## SALDO DE FOLGAS');sd.forEach(y=>{L.push(`${y.e.nome}: saldo ${fd(y.saldo)}`);y.movs.forEach(m=>L.push(`  ${fmt(m.data)} ${m.tipo==='credito'?'+':'-'}${fn(+m.dias)}${m.anotacao?' - '+m.anotacao:''}`))})}
@@ -1105,6 +1112,7 @@ function baixarPDF(D){
     const sd=D.func.filter(q=>q.saldo!==0||q.movs.length);
     if(sd.length){secao('Saldo de folgas');tabela([{t:'Funcionário',w:44},{t:'Saldo',w:26,al:'r'},{t:'Movimentos no período',w:112}],sd.map(q=>({c:[{t:q.e.nome,b:true},{t:fd(q.saldo),b:true,k:q.saldo<0?K.bad:q.saldo>0?K.ok:K.ink},q.movs.map(m=>`${dm(m.data)} ${m.tipo==='credito'?'+':'-'}${fn(+m.dias)}${m.anotacao?' '+m.anotacao:''}`).join('  ·  ')||'-']})))}
   }
+  const ini0=D.func.filter(q=>q.ini&&q.ini>=D.de);if(ini0.length){ensure(10);ft(9,true);T(K.ink);doc.text(L('Início de trabalho'),M,y+2);y+=7;ft(8.5,false);T(K.mut);ini0.forEach(q=>{ensure(5);doc.text(L(q.e.nome+' começou em '+fmt(q.ini)+'. Os dias anteriores não entram nas horas previstas.'),M,y);y+=4.6});y+=3}
   ft(7.5,false);T(K.mut);const nota=doc.splitTextToSize(L('Horas contadas da entrada até a saída, sem descontar intervalo. Feriados só contam para quem foi escalado neles.'),CW);ensure(nota.length*3.6+2);nota.forEach((t,i)=>doc.text(t,M,y+i*3.6));
   const n=doc.getNumberOfPages();
   for(let i=1;i<=n;i++){doc.setPage(i);S(K.line);doc.setLineWidth(.3);doc.line(M,PH-12,W-M,PH-12);ft(7.5,false);T(K.mut);doc.text('Escala da Equipe',M,PH-7.5);doc.text(L('Página '+i+' de '+n),W-M,PH-7.5,{align:'right'})}
