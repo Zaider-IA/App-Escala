@@ -1,6 +1,6 @@
 /* ===== js/base.js ===== */
 /* Base: conexão, estado, utilitários de data/texto, ícones e cálculo dos feriados */
-const APP_VERSAO = '9 · 19/11/2026';
+const APP_VERSAO = '10 · 19/11/2026';
 const db = supabase.createClient(CFG.url, CFG.key);
 const $ = s => document.querySelector(s);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -381,8 +381,8 @@ function vSabados(){
 }
 bind.sabados=()=>{
   $('#sm').onchange=e=>{S.sm=e.target.value||S.sm;render()};
-  $('#spdf').onclick=()=>escolheQuem(ids=>baixarSabadosPDF(S.sm,ids),'Baixar PDF');
-  $('#stxt').onclick=()=>escolheQuem(async ids=>{const t=textoSabados(S.sm,ids);try{await navigator.clipboard.writeText(t);alert('Escala copiada. É só colar no WhatsApp.')}catch{prompt('Copie o texto:',t)}},'Copiar');
+  $('#spdf').onclick=()=>escolheQuem(ids=>baixarSabadosPDF(S.sm,ids),'Baixar PDF',escaladosEm(sabadosDoMes(S.sm)));
+  $('#stxt').onclick=()=>escolheQuem(async ids=>{const t=textoSabados(S.sm,ids);try{await navigator.clipboard.writeText(t);alert('Escala copiada. É só colar no WhatsApp.')}catch{prompt('Copie o texto:',t)}},'Copiar',escaladosEm(sabadosDoMes(S.sm)));
   document.querySelectorAll('[data-t2]').forEach(b=>b.onclick=()=>turnosForm(b.dataset.t2));
   document.querySelectorAll('[data-t1]').forEach(b=>b.onclick=()=>diaForm(b.dataset.t1,null));
   document.querySelectorAll('[data-cp]').forEach(b=>b.onclick=()=>copiaSabado(b.dataset.cp));
@@ -679,13 +679,13 @@ function vFerEscala(){
 }
 bind.ferescala=()=>{
   $('#fm').onchange=e=>{S.fm=e.target.value||S.fm;render()};
-  $('#fpdf').onclick=()=>escolheQuem(ids=>baixarFeriadosPDF(S.fm,ids),'Baixar PDF');
-  $('#ftxt').onclick=()=>escolheQuem(async ids=>{const t=textoFeriados(S.fm,ids);try{await navigator.clipboard.writeText(t);alert('Escala copiada. É só colar no WhatsApp.')}catch{prompt('Copie o texto:',t)}},'Copiar');
+  $('#fpdf').onclick=()=>escolheQuem(ids=>baixarFeriadosPDF(S.fm,ids),'Baixar PDF',escaladosEm(Object.keys(feriados(+S.fm.slice(0,4))).filter(x=>x.startsWith(S.fm))));
+  $('#ftxt').onclick=()=>escolheQuem(async ids=>{const t=textoFeriados(S.fm,ids);try{await navigator.clipboard.writeText(t);alert('Escala copiada. É só colar no WhatsApp.')}catch{prompt('Copie o texto:',t)}},'Copiar',escaladosEm(Object.keys(feriados(+S.fm.slice(0,4))).filter(x=>x.startsWith(S.fm))));
   document.querySelectorAll('[data-fs],[data-fk]').forEach(b=>b.onclick=()=>feriadoSheet(b.dataset.fs||b.dataset.fk));
   document.querySelectorAll('[data-fn]').forEach(b=>b.onclick=()=>editaNota('fer:'+b.dataset.fn,'Anotação do feriado '+fmt(b.dataset.fn)));
-  const todos=()=>{const at=S.emps.filter(e=>e.ativo);return (DS.sabSel||at.filter(e=>e.tipo!=='flexivel').map(e=>e.id)).filter(id=>at.some(e=>e.id===id))};
-  document.querySelectorAll('[data-fp]').forEach(b=>b.onclick=()=>baixarFeriadosPDF(S.fm,todos(),b.dataset.fp));
-  document.querySelectorAll('[data-ft]').forEach(b=>b.onclick=async()=>{const t=textoFeriados(S.fm,todos(),b.dataset.ft);try{await navigator.clipboard.writeText(t);alert('Escala copiada. É só colar no WhatsApp.')}catch{prompt('Copie o texto:',t)}});
+  const todos=k=>{const at=S.emps.filter(e=>e.ativo);return [...new Set([...(DS.sabSel||at.filter(e=>e.tipo!=='flexivel').map(e=>e.id)),...escaladosEm([k])])].filter(id=>at.some(e=>e.id===id))};
+  document.querySelectorAll('[data-fp]').forEach(b=>b.onclick=()=>baixarFeriadosPDF(S.fm,todos(b.dataset.fp),b.dataset.fp));
+  document.querySelectorAll('[data-ft]').forEach(b=>b.onclick=async()=>{const t=textoFeriados(S.fm,todos(b.dataset.ft),b.dataset.ft);try{await navigator.clipboard.writeText(t);alert('Escala copiada. É só colar no WhatsApp.')}catch{prompt('Copie o texto:',t)}});
 };
 
 /* ===== js/tela-saldo.js ===== */
@@ -831,8 +831,10 @@ function corpoFunc(D){
   ${(x.saldo!==0||x.movs.length)?saldoCard(x):''}${D.fm.length?faltasCard(D):''}${pendCard(D)}${notaRel(D)}`;
 }
 const nomeArq=D=>{const x=D.empId&&D.func[0];return `Relatorio_${slug(x?x.e.nome:'equipe')}_${D.de}_a_${D.ate}`};
-function escolheQuem(acao,label){
-  const at=S.emps.filter(e=>e.ativo),sel=(DS.sabSel||at.filter(e=>e.tipo!=='flexivel').map(e=>e.id)).filter(id=>at.some(e=>e.id===id));
+// Quem está escalado nos dias dados (para nunca esquecer alguém que foi escalado depois da lista salva)
+const escaladosEm=ds=>S.emps.filter(e=>e.ativo&&ds.some(d=>turnoDia(e,d))).map(e=>e.id);
+function escolheQuem(acao,label,extra){
+  const at=S.emps.filter(e=>e.ativo),sel=[...new Set([...(DS.sabSel||at.filter(e=>e.tipo!=='flexivel').map(e=>e.id)),...(extra||[])])].filter(id=>at.some(e=>e.id===id));
   if(!at.length)return alert('Cadastre funcionários primeiro.');
   modal('Quem aparece na escala',`<p class="mut" style="margin-top:0"><small>Marque as pessoas que entram no arquivo (ex.: só os professores).</small></p>${at.map(e=>`<label style="color:var(--ink);display:flex;align-items:center;margin:10px 0;font-size:15px"><input type="checkbox" name="q_${e.id}" ${sel.includes(e.id)?'checked':''}>${esc(e.nome)}${e.tipo==='flexivel'?' <small style="margin-left:6px">(flexível)</small>':''}</label>`).join('')}`,async d=>{
     const ids=at.filter(e=>d.querySelector(`[name="q_${e.id}"]`).checked).map(e=>e.id);
