@@ -1,6 +1,6 @@
 /* ===== js/base.js ===== */
 /* Base: conexão, estado, utilitários de data/texto, ícones e cálculo dos feriados */
-const APP_VERSAO = '11 · 19/11/2026';
+const APP_VERSAO = '12 · 19/11/2026';
 const db = supabase.createClient(CFG.url, CFG.key);
 const $ = s => document.querySelector(s);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -379,12 +379,16 @@ function vSabados(){
     ${es.map(x=>`<div class="it" data-sx="${x.id}"><div class="av">${esc((nome(x.funcionario_id)[0]||'?').toUpperCase())}</div><div class="grow"><b>${esc(nome(x.funcionario_id))}</b><br><small>${txtDia(x)}</small></div></div>`).join('')||'<p class="mut"><small>Nada escalado ainda.</small></p>'}
     ${notaHtml('sab:'+k)}
     <div class="row"><button class="ghost grow sm" data-t2="${k}">Escalar dois turnos</button><button class="ghost grow sm" data-t1="${k}">Adicionar pessoa</button></div>
-    <div class="row"><button class="ghost grow sm" data-cp="${k}">Copiar de outro sábado</button><button class="ghost grow sm" data-nt="${k}">${nota('sab:'+k)?'Editar anotação':'Anotação'}</button></div></div>`}).join('')}`;
+    <div class="row"><button class="ghost grow sm" data-cp="${k}">Copiar de outro sábado</button><button class="ghost grow sm" data-nt="${k}">${nota('sab:'+k)?'Editar anotação':'Anotação'}</button></div>
+    <div class="row"><button class="ghost grow sm" data-sp="${k}">Baixar PDF deste sábado</button><button class="ghost grow sm" data-st="${k}">Copiar texto</button></div></div>`}).join('')}`;
 }
 bind.sabados=()=>{
   $('#sm').onchange=e=>{S.sm=e.target.value||S.sm;render()};
   $('#spdf').onclick=()=>escolheQuem(ids=>baixarSabadosPDF(S.sm,ids),'Baixar PDF',escaladosEm(sabadosDoMes(S.sm)));
   $('#stxt').onclick=()=>escolheQuem(async ids=>{const t=textoSabados(S.sm,ids);try{await navigator.clipboard.writeText(t);alert('Escala copiada. É só colar no WhatsApp.')}catch{prompt('Copie o texto:',t)}},'Copiar',escaladosEm(sabadosDoMes(S.sm)));
+  const quemSab=k=>{const at=S.emps.filter(e=>e.ativo);return [...new Set([...(DS.sabSel||at.filter(e=>e.tipo!=='flexivel').map(e=>e.id)),...escaladosEm([k])])].filter(id=>at.some(e=>e.id===id))};
+  document.querySelectorAll('[data-sp]').forEach(b=>b.onclick=()=>baixarSabadosPDF(S.sm,quemSab(b.dataset.sp),b.dataset.sp));
+  document.querySelectorAll('[data-st]').forEach(b=>b.onclick=async()=>{const t=textoSabados(S.sm,quemSab(b.dataset.st),b.dataset.st);try{await navigator.clipboard.writeText(t);alert('Escala copiada. É só colar no WhatsApp.')}catch{prompt('Copie o texto:',t)}});
   document.querySelectorAll('[data-t2]').forEach(b=>b.onclick=()=>turnosForm(b.dataset.t2));
   document.querySelectorAll('[data-t1]').forEach(b=>b.onclick=()=>diaForm(b.dataset.t1,null));
   document.querySelectorAll('[data-cp]').forEach(b=>b.onclick=()=>copiaSabado(b.dataset.cp));
@@ -917,9 +921,9 @@ function linhasRel(D){
 }
 const textoRel=D=>linhasRel(D).map(l=>l.replace(/^## /,'')).join('\n');
 const difer=it=>it.length>1&&it[0].en!==it[it.length-1].en;
-function textoSabados(ym,ids){
-  const [de,ate]=mesRange(ym),D=relDados(de,ate),L=['ESCALA DOS SÁBADOS - '+mesNome(ym).toUpperCase(),''];
-  D.sab.forEach(s=>{const it=s.itens.filter(i=>ids.includes(i.id));L.push('Sábado '+dm(s.k));if(!it.length)L.push('  sem escala definida');it.forEach((i,n)=>L.push(`  ${txtAs(i)} - ${i.nome}${difer(it)?(n===0?' (abre)':n===it.length-1?' (fecha)':''):''}`));if(nota('sab:'+s.k))L.push('  Obs.: '+nota('sab:'+s.k));L.push('')});
+function textoSabados(ym,ids,only){
+  const [de,ate]=mesRange(ym),D=relDados(de,ate),L=[only?'ESCALA DO SÁBADO':'ESCALA DOS SÁBADOS - '+mesNome(ym).toUpperCase(),''];
+  D.sab.filter(s=>!only||s.k===only).forEach(s=>{const it=s.itens.filter(i=>ids.includes(i.id));L.push('Sábado '+dm(s.k));if(!it.length)L.push('  sem escala definida');it.forEach((i,n)=>L.push(`  ${txtAs(i)} - ${i.nome}${difer(it)?(n===0?' (abre)':n===it.length-1?' (fecha)':''):''}`));if(nota('sab:'+s.k))L.push('  Obs.: '+nota('sab:'+s.k));L.push('')});
   return L.join('\n').trim();
 }
 function textoFeriados(ym,ids,only){
@@ -956,15 +960,16 @@ function cabecalhoPDF(doc,c,kicker,titulo,sub){
       if(DS.sub){ft(7,true);const bw=doc.getTextWidth(L(DS.sub.toUpperCase()))+8,by=l2?22.5:16;F(hex('#F7B932'));doc.roundedRect(W-M-bw,by,bw,5,0.8,0.8,'F');T(K.white);doc.text(L(DS.sub.toUpperCase()),W-M-bw/2,by+3.5,{align:'center'})}}
   }catch(e){}
 }
-function baixarSabadosPDF(ym,ids){
+function baixarSabadosPDF(ym,ids,only){
   const J=window.jspdf&&window.jspdf.jsPDF;
   if(!J){alert('Não consegui carregar o gerador de PDF (precisa de internet). Tente de novo com internet.');return}
+  if(only){const s0=relDados(...mesRange(ym)).sab.find(s=>s.k===only);if(!s0||!s0.itens.some(i=>ids.includes(i.id)))return alert('Esse sábado ainda não tem ninguém escalado (entre as pessoas escolhidas para os PDFs). Monte a escala antes de baixar.')}
   const doc=new J({unit:'mm',format:'a4'}),c=pdfCtx(doc),{K,F,T,S,ft,L,hex,W,PH,M,CW}=c;
-  cabecalhoPDF(doc,c,'ESCALA DOS SÁBADOS',mesNome(ym),'Gerado em '+new Date().toLocaleDateString('pt-BR'));
+  cabecalhoPDF(doc,c,only?'ESCALA DO SÁBADO':'ESCALA DOS SÁBADOS',only?fmt(only):mesNome(ym),'Gerado em '+new Date().toLocaleDateString('pt-BR'));
   const [de,ate]=mesRange(ym),D=relDados(de,ate),fer={};D.fer.forEach(f=>fer[f.k]=f.n);
   const onp=lum(DS.cores.pri)>.62?K.ink:K.white;let y=47;
   const pill=(px,py,t,fg,bg)=>{ft(7.5,true);const w=doc.getTextWidth(L(t))+6;F(bg);doc.roundedRect(px,py-3.9,w,5.4,2.7,2.7,'F');T(fg);doc.text(L(t),px+3,py);return w};
-  D.sab.forEach(s=>{
+  D.sab.filter(s=>!only||s.k===only).forEach(s=>{
     const it=s.itens.filter(i=>ids.includes(i.id)),n=Math.max(1,it.length),rh=Math.max(28,10+n*10),nt=nota('sab:'+s.k),nl=(ft(8,false),nt?doc.splitTextToSize(L(nt),CW-34-16):[]),h=rh+(nl.length?nl.length*3.8+2:0);
     if(y+h>PH-18){doc.addPage();y=M}
     F(K.white);S(K.line);doc.setLineWidth(.3);doc.roundedRect(M,y,CW,h,3,3,'FD');
@@ -986,8 +991,8 @@ function baixarSabadosPDF(ym,ids){
     y+=h+5;
   });
   const nn=doc.getNumberOfPages();
-  for(let i=1;i<=nn;i++){doc.setPage(i);S(K.line);doc.setLineWidth(.3);doc.line(M,PH-12,W-M,PH-12);ft(7.5,false);T(K.mut);doc.text('Escala dos sábados',M,PH-7.5);doc.text(L('Página '+i+' de '+nn),W-M,PH-7.5,{align:'right'})}
-  doc.save('Escala_Sabados_'+ym+'.pdf');
+  for(let i=1;i<=nn;i++){doc.setPage(i);S(K.line);doc.setLineWidth(.3);doc.line(M,PH-12,W-M,PH-12);ft(7.5,false);T(K.mut);doc.text(only?'Escala do sábado':'Escala dos sábados',M,PH-7.5);doc.text(L('Página '+i+' de '+nn),W-M,PH-7.5,{align:'right'})}
+  doc.save(only?'Escala_Sabado_'+only+'.pdf':'Escala_Sabados_'+ym+'.pdf');
 }
 function baixarFeriadosPDF(ym,ids,only){
   const J=window.jspdf&&window.jspdf.jsPDF;
